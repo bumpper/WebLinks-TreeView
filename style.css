@@ -1,0 +1,250 @@
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f4f6f9;
+  --surface:   #ffffff;
+  --border:    #dde2ea;
+  --accent:    #4a7fcb;
+  --accent-h:  #2f5fa8;
+  --text:      #222b38;
+  --text-muted:#6b7a90;
+  --folder-bg: #eef2fb;
+  --link-hover:#f0f4fd;
+  --radius:    6px;
+  --font:      system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Layout ───────────────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+header .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+main {
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 16px 48px;
+}
+
+/* ── Drop / upload zone ───────────────────────────────────── */
+#drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+#drop-zone.drag-over {
+  border-color: var(--accent);
+  background: #eef4ff;
+}
+
+#drop-zone .icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+#drop-zone p {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+#drop-zone strong {
+  color: var(--text);
+}
+
+#file-input { display: none; }
+
+.btn {
+  display: inline-block;
+  padding: 9px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn:hover { background: var(--accent-h); }
+
+/* ── Search & toolbar ─────────────────────────────────────── */
+#toolbar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+#toolbar.visible { display: flex; }
+
+#search {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#search:focus { border-color: var(--accent); }
+
+.btn-sm {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+}
+
+/* ── Stats bar ────────────────────────────────────────────── */
+#stats {
+  display: none;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+#stats.visible { display: block; }
+
+/* ── Tree container ───────────────────────────────────────── */
+#tree-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  display: none;
+}
+
+#tree-container.visible { display: block; }
+
+/* ── Tree nodes ───────────────────────────────────────────── */
+ul.tree, ul.tree ul {
+  list-style: none;
+  padding-left: 20px;
+}
+
+ul.tree { padding-left: 0; }
+
+/* folder item */
+li.folder > .node-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  background: var(--folder-bg);
+  margin: 2px 0;
+  font-weight: 500;
+}
+
+li.folder > .node-row:hover {
+  background: #dde7f8;
+}
+
+/* link item */
+li.bookmark > .node-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  margin: 1px 0;
+}
+
+li.bookmark > .node-row:hover {
+  background: var(--link-hover);
+}
+
+li.bookmark a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 620px;
+  display: inline-block;
+}
+
+li.bookmark a:hover {
+  text-decoration: underline;
+  color: var(--accent-h);
+}
+
+/* icons */
+.icon-toggle {
+  width: 16px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.icon-node {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* collapsed state */
+li.folder.collapsed > ul { display: none; }
+
+/* ── Highlight matches ────────────────────────────────────── */
+mark {
+  background: #ffe066;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* hide non-matching items during search */
+li.hidden { display: none; }
+
+/* ── Error message ────────────────────────────────────────── */
+#error-msg {
+  display: none;
+  background: #fff2f2;
+  border: 1px solid #f5c2c7;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  color: #c0392b;
+  font-size: 0.9rem;
+}
+
+#error-msg.visible { display: block; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  li.bookmark a { max-width: 80vw; }
+}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebLinks TreeView – Browser Bookmark Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <span style="font-size:1.5rem">🔖</span>
+    <div>
+      <h1>WebLinks TreeView</h1>
+      <p class="subtitle">Visualize your browser bookmarks as an interactive folder hierarchy</p>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Upload / drag-drop zone -->
+    <div id="drop-zone" role="button" tabindex="0"
+         aria-label="Upload bookmarks file"
+         onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('file-input').click()">
+      <div class="icon">📂</div>
+      <p>
+        <strong>Drag &amp; drop</strong> your exported bookmark file here,<br>
+        or click to choose a file.
+      </p>
+      <button class="btn" type="button"
+              onclick="event.stopPropagation();document.getElementById('file-input').click()">
+        Choose File
+      </button>
+      <input type="file" id="file-input" accept=".html,.htm" />
+      <p style="margin-top:16px;font-size:0.8rem;">
+        Supports exports from Chrome, Firefox, Edge, Safari, and Opera
+        (<code>.html</code> / <code>.htm</code>)
+      </p>
+    </div>
+
+    <!-- Error message -->
+    <div id="error-msg" role="alert"></div>
+
+    <!-- Toolbar (hidden until a file is loaded) -->
+    <div id="toolbar">
+      <input id="search" type="search" placeholder="Search bookmarks…"
+             aria-label="Search bookmarks" />
+      <button id="expand-all"   class="btn btn-sm" type="button">Expand all</button>
+      <button id="collapse-all" class="btn btn-sm" type="button">Collapse all</button>
+      <button id="load-new"     class="btn btn-sm" type="button"
+              style="background:#6b7a90;">Load new file</button>
+    </div>
+
+    <!-- Stats (hidden until a file is loaded) -->
+    <p id="stats"></p>
+
+    <!-- Tree output -->
+    <div id="tree-container" aria-label="Bookmark tree"></div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
