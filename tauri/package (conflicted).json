@@ -1,0 +1,39 @@
+{
+  "name": "magic8ball",
+  "version": "1.0.0",
+  "description": "Magic 8 Ball - Ask Questions Get Mystical Answers",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:windows": "tauri dev",
+    "dev:mac": "tauri dev",
+    "dev:linux": "tauri dev",
+    "build:windows": "tauri build --bundles msi nsis",
+    "build:mac": "tauri build --bundles dmg app",
+    "build:mac-intel": "tauri build --target x86_64-apple-darwin --bundles dmg app",
+    "build:linux": "tauri build --bundles deb appimage",
+    "build:linux-deb": "tauri build --bundles deb appimage",
+    "build:linux-rpm": "tauri build --bundles rpm",
+    "build:fedora": "tauri build --bundles rpm appimage",
+    "build:macos": "tauri build --bundles dmg app",
+    "platform:info": "node scripts/platform-utils.js",
+    "clean": "cd src-tauri && cargo clean && cd ..",
+    "clean:all": "npm run clean && rm -rf node_modules || rmdir /s /q node_modules 2>nul || echo Cleaned"
+  },
+  "keywords": [
+    "magic-8-ball",
+    "fortune-teller",
+    "mystical-answers",
+    "decision-maker",
+    "oracle",
+    "cross-platform",
+    "tauri",
+    "desktop-app"
+  ],
+  "author": "Radius.Center",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

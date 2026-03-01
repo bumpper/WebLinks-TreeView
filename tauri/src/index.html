@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Bookmark TreeView</title>
+    
+    <!-- Enhanced Meta Tags -->
+    <meta name="Rating" content="general" />
+    <meta name="DESCRIPTION" content="Generate a web-based folder structured hierarchy of your browsers exported bookmarks or favorite saved web page address URL's." />
+    <meta name="KEYWORDS" content="Bookmarks, Favorites, Treeview, Tree, View, Hierarchy, Folder, Structure" />
+    <meta name="author" content="Radius.Center" />
+    
+    <link rel="SHORTCUT ICON" href="favicon.ico" />
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s;
+        }
+        body.dark-mode {
+            background-color: #1a1a1a;
+        }
+        .hidden-title {
+		    display: none;
+		}
+        .magic-8-ball {
+            width: 600px;
+            height: 600px;
+            background-image: url('');
+            background-size: cover;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .magic-8-ball::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 80px;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 40%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+        body.dark-mode .magic-8-ball::after {
+            display: none;
+        }
+        .message {
+            width: 300px;
+            height: 300px;
+            background-color: #000000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 3px;
+            text-align: center;
+            opacity: 0;
+            filter: blur(20px);
+            transform: translateY(50px);
+        }
+        .message.show {
+            animation: floatUp 2s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% {
+                font-size: 3px;
+                filter: blur(20px);
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            20% {
+                opacity: 1;
+            }
+            100% {
+                font-size: 28px;
+                filter: blur(0px);
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 25px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 21px;
+            width: 21px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #5555ff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(25px);
+        }
+    </style>
+</head>
+<body>
+<div class="hidden-title"><center><h1>Bookmark TreeView</h1></center></p></div>
+    <div class="dark-mode-toggle">
+        <label class="switch">
+            <input type="checkbox" id="darkModeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <script>
+		const magic8Ball = document.getElementById('magic8Ball');
+		const messageElement = document.getElementById('message');
+		const darkModeToggle = document.getElementById('darkModeToggle');
+		const body = document.body;
+
+		function toggleDarkMode() {
+		    body.classList.toggle('dark-mode');
+		    localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+		    darkModeToggle.checked = body.classList.contains('dark-mode');
+		}
+
+		function applyDarkMode() {
+		    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+		    if (isDarkMode) {
+		        body.classList.add('dark-mode');
+		        darkModeToggle.checked = true;
+		    } else {
+		        body.classList.remove('dark-mode');
+		        darkModeToggle.checked = false;
+		    }
+		}
+
+		// Apply dark mode setting on page load
+		applyDarkMode();
+    </script>
+</body>
+</html>
