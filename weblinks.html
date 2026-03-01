@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>WebLinks TreeView</title>
+    
+    <!-- Enhanced Meta Tags -->
+    <meta name="Rating" content="general" />
+    <meta name="DESCRIPTION" content="Generate a web-based folder structured hierarchy of your browsers exported bookmarks or favorite saved web page address URL's." />
+    <meta name="KEYWORDS" content="Bookmarks, Favorites, Treeview, Tree, View, Hierarchy, Folder, Structure" />
+    <meta name="author" content="Radius.Center" />
+    <meta name="distribution" content="Global" />
+    <meta name="robots" content="FOLLOW,INDEX" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://radius.center/weblinks/weblinks.html">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Generate your own web-based Bookmarks.">
+    <meta property="og:description" content="Generate a web-based folder structured hierarchy of your browsers exported bookmarks or favorite saved web page address URL's.">
+    <meta property="og:url" content="https://radius.center/weblinks/weblinks.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Radius.Center">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Generate your own web-based Bookmarks.">
+    <meta name="twitter:description" content="Generate your own web-based Bookmarks that can be uploaded to your own web server for easy access later.">
+    
+    <!-- Language and Hreflang -->
+    <meta name="language" content="en">
+    <link rel="alternate" hreflang="en" href="https://radius.center/weblinks/weblinks.html">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "WebLinks TreeView",
+      "description": "Generate a web-based folder structured hierarchy of your browsers exported bookmarks or favorite saved web page address URL's.",
+      "url": "https://radius.center/weblinks/weblinks.html",
+      "applicationCategory": "Entertainment",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "Radius.Center",
+        "url": "https://radius.center"
+      },
+      "keywords": ["Links", "URL's", "Favorites", "Bookmarks", "WebLinks"],
+      "genre": ["Links", "URL's", "Favorites", "Bookmarks", "WebLinks"]
+    }
+    </script>
+    
+    <link rel="SHORTCUT ICON" href="favicon.png" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f0f0f0;
+            transition: background-color 0.3s;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+        body.dark-mode {
+            background-color: #1a1a1a;
+        }
+        .split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        .frame {
+            height: 100%;
+            border: none;
+        }
+        .left-frame {
+            width: 20%;
+            min-width: 100px;
+            max-width: 50vw;
+            transition: width 0.2s;
+        }
+        .right-frame {
+            flex: 1;
+            width: 80%;
+        }
+        .divider {
+            width: 6px;
+            background: #ccc;
+            cursor: ew-resize;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+        .divider:hover, .divider.dragging {
+            background: #888;
+        }
+        .dark-mode .divider {
+            background: #444;
+        }
+        .dark-mode .divider:hover, .dark-mode .divider.dragging {
+            background: #666;
+        }
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 90px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 25px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 21px;
+            width: 21px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #5555ff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(25px);
+        }
+        .help-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.3s;
+        }
+        .help-btn:hover {
+            background-color: #e0e0e0;
+        }
+        .dark-mode .help-btn {
+            background-color: #444;
+            color: white;
+            border: 1px solid #555;
+            border-top: 2px solid #666;
+            border-left: 2px solid #666;
+        }
+        .dark-mode .help-btn:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <!-- Controls moved to preview.html -->
+    <div class="split-container" id="splitContainer">
+        <iframe src="treeview.html" class="frame left-frame" id="leftFrame" title="Treeview"></iframe>
+        <div class="divider" id="divider"></div>
+        <iframe src="preview.html" class="frame right-frame" id="rightFrame" title="Preview"></iframe>
+    </div>
+
+    <script>
+		const weblinks = document.getElementById('weblinks');
+		const messageElement = document.getElementById('message');
+		const darkModeToggle = document.getElementById('darkModeToggle');
+		const body = document.body;
+    <script>
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        function toggleDarkMode() {
+            body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+            darkModeToggle.checked = body.classList.contains('dark-mode');
+        }
+        function applyDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                darkModeToggle.checked = true;
+            } else {
+                body.classList.remove('dark-mode');
+                darkModeToggle.checked = false;
+            }
+        }
+        darkModeToggle.addEventListener('change', toggleDarkMode);
+        applyDarkMode();
+
+        // Split/resize logic
+        const divider = document.getElementById('divider');
+        const leftFrame = document.getElementById('leftFrame');
+        let isDragging = false;
+        divider.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            divider.classList.add('dragging');
+            document.body.style.cursor = 'ew-resize';
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            const container = document.getElementById('splitContainer');
+            const minWidth = 100;
+            const maxWidth = container.offsetWidth * 0.5;
+            let newWidth = e.clientX;
+            if (newWidth < minWidth) newWidth = minWidth;
+            if (newWidth > maxWidth) newWidth = maxWidth;
+            leftFrame.style.width = newWidth + 'px';
+        });
+        document.addEventListener('mouseup', function(e) {
+            if (isDragging) {
+                isDragging = false;
+                divider.classList.remove('dragging');
+                document.body.style.cursor = '';
+            }
+        });
+    </script>

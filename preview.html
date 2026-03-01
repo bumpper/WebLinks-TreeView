@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Preview</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #fff; }
+        .preview-placeholder {
+            padding: 2em;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="dark-mode-toggle" style="position: absolute; top: 20px; right: 90px; z-index: 100;">
+        <label class="switch">
+            <input type="checkbox" id="darkModeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <a href="help.html" class="help-btn" title="Help Documentation" aria-label="Help Documentation" style="position: absolute; top: 20px; right: 20px; z-index: 100;">?</a>
+    <script>
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        function toggleDarkMode() {
+            body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+            darkModeToggle.checked = body.classList.contains('dark-mode');
+        }
+        function applyDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                darkModeToggle.checked = true;
+            } else {
+                body.classList.remove('dark-mode');
+                darkModeToggle.checked = false;
+            }
+        }
+        darkModeToggle.addEventListener('change', toggleDarkMode);
+        applyDarkMode();
+    </script>
+    <div class="preview-placeholder">
+        <h2>Preview Placeholder</h2>
+        <p>This is where the bookmark preview will appear.</p>
+    </div>
+</body>
+</html>
