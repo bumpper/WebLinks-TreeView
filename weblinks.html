@@ -88,10 +88,9 @@
             border: none;
         }
         .left-frame {
-            width: 20%;
+            width: 300px;
             min-width: 100px;
             max-width: 50vw;
-            transition: width 0.2s;
         }
         .right-frame {
             flex: 1;
@@ -187,7 +186,6 @@
     </style>
 </head>
 <body>
-    <!-- Controls moved to preview.html -->
     <div class="split-container" id="splitContainer">
         <iframe src="treeview.html" class="frame left-frame" id="leftFrame" title="Treeview"></iframe>
         <div class="divider" id="divider"></div>
@@ -195,35 +193,20 @@
     </div>
 
     <script>
-		const weblinks = document.getElementById('weblinks');
-		const messageElement = document.getElementById('message');
-		const darkModeToggle = document.getElementById('darkModeToggle');
-		const body = document.body;
-    <script>
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const body = document.body;
-        function toggleDarkMode() {
-            body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
-            darkModeToggle.checked = body.classList.contains('dark-mode');
-        }
-        function applyDarkMode() {
-            const isDarkMode = localStorage.getItem('darkMode') === 'true';
-            if (isDarkMode) {
-                body.classList.add('dark-mode');
-                darkModeToggle.checked = true;
-            } else {
-                body.classList.remove('dark-mode');
-                darkModeToggle.checked = false;
-            }
-        }
-        darkModeToggle.addEventListener('change', toggleDarkMode);
-        applyDarkMode();
-
-        // Split/resize logic
+        // Restore divider position from localStorage
         const divider = document.getElementById('divider');
         const leftFrame = document.getElementById('leftFrame');
+        const splitContainer = document.getElementById('splitContainer');
         let isDragging = false;
+        function setLeftFrameWidth(px) {
+            leftFrame.style.width = px + 'px';
+            localStorage.setItem('dividerPosition', px);
+        }
+        // On load, restore divider position
+        const savedDivider = localStorage.getItem('dividerPosition');
+        if (savedDivider) {
+            setLeftFrameWidth(Number(savedDivider));
+        }
         divider.addEventListener('mousedown', function(e) {
             isDragging = true;
             divider.classList.add('dragging');
@@ -231,19 +214,36 @@
         });
         document.addEventListener('mousemove', function(e) {
             if (!isDragging) return;
-            const container = document.getElementById('splitContainer');
             const minWidth = 100;
-            const maxWidth = container.offsetWidth * 0.5;
-            let newWidth = e.clientX;
+            const maxWidth = splitContainer.offsetWidth * 0.5;
+            let newWidth = e.clientX - splitContainer.getBoundingClientRect().left;
             if (newWidth < minWidth) newWidth = minWidth;
             if (newWidth > maxWidth) newWidth = maxWidth;
-            leftFrame.style.width = newWidth + 'px';
+            setLeftFrameWidth(newWidth);
         });
         document.addEventListener('mouseup', function(e) {
             if (isDragging) {
                 isDragging = false;
                 divider.classList.remove('dragging');
                 document.body.style.cursor = '';
+            }
+        });
+
+        // Restore dark mode from localStorage
+        const body = document.body;
+        function applyDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
+        }
+        applyDarkMode();
+        // Listen for changes in localStorage to update mode live if both pages are open
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'darkMode') {
+                applyDarkMode();
             }
         });
     </script>

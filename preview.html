@@ -13,33 +13,85 @@
     </style>
 </head>
 <body>
-    <div class="dark-mode-toggle" style="position: absolute; top: 20px; right: 90px; z-index: 100;">
-        <label class="switch">
-            <input type="checkbox" id="darkModeToggle">
-            <span class="slider"></span>
-        </label>
-    </div>
-    <a href="help.html" class="help-btn" title="Help Documentation" aria-label="Help Documentation" style="position: absolute; top: 20px; right: 20px; z-index: 100;">?</a>
+    <div id="dark-mode-toggle" class="toggle-switch"></div>
+    <a href="help.html" class="help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>
+    <style>
+        .toggle-switch {
+            position: absolute;
+            top: 20px;
+            right: 90px;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+            background-color: #ccc;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        .toggle-switch::before {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: transform 0.5s;
+        }
+        .toggle-switch.active {
+            background-color: #5555ff;
+        }
+        .toggle-switch.active::before {
+            transform: translateX(25px);
+        }
+        .help-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            margin: 0;
+            font-size: 16px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.3s;
+            display: inline-block;
+        }
+        .help-btn:hover {
+            background-color: #e0e0e0;
+        }
+        .dark-mode .help-btn {
+            background-color: #444;
+            color: #fff;
+            border: 1px solid #555;
+            border-top-color: #888;
+            border-left-color: #888;
+        }
+        body.dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+    </style>
     <script>
-        const darkModeToggle = document.getElementById('darkModeToggle');
+        // Dark mode toggle functionality
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
         const body = document.body;
-        function toggleDarkMode() {
+
+        darkModeToggle.addEventListener('click', () => {
             body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
-            darkModeToggle.checked = body.classList.contains('dark-mode');
+            darkModeToggle.classList.toggle('active');
+            // Always set localStorage to 'true' or 'false' as a string
+            localStorage.setItem('darkMode', body.classList.contains('dark-mode') ? 'true' : 'false');
+        });
+
+        // Apply saved dark mode preference on page load
+        if (localStorage.getItem('darkMode') === 'true') {
+            body.classList.add('dark-mode');
+            darkModeToggle.classList.add('active');
         }
-        function applyDarkMode() {
-            const isDarkMode = localStorage.getItem('darkMode') === 'true';
-            if (isDarkMode) {
-                body.classList.add('dark-mode');
-                darkModeToggle.checked = true;
-            } else {
-                body.classList.remove('dark-mode');
-                darkModeToggle.checked = false;
-            }
-        }
-        darkModeToggle.addEventListener('change', toggleDarkMode);
-        applyDarkMode();
     </script>
     <div class="preview-placeholder">
         <h2>Preview Placeholder</h2>
