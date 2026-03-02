@@ -20,12 +20,9 @@
     </style>
 </head>
 <body>
-    <div class="tree-placeholder">
-        <h2>TreeView Placeholder</h2>
-        <p>This is where your bookmarks tree will appear.</p>
-    </div>
+    <div id="treeview-container" style="padding:1em;"></div>
     <script>
-        // Sync dark mode with localStorage (set by preview.html)
+        // ...existing dark mode code...
         const body = document.body;
         function applyDarkMode() {
             const isDarkMode = localStorage.getItem('darkMode') === 'true';
@@ -34,16 +31,181 @@
             } else {
                 body.classList.remove('dark-mode');
             }
-            console.log('Dark mode applied:', isDarkMode);
         }
         applyDarkMode();
-        // Listen for changes in localStorage to update mode live if both pages are open
         window.addEventListener('storage', function(e) {
-            if (e.key === 'darkMode') {
-                console.log('Storage event detected. New value:', e.newValue);
-                applyDarkMode();
-            }
+            if (e.key === 'darkMode') applyDarkMode();
+            if (e.key === 'uploadedBookmarks' || e.key === 'bookmarksUpdated') renderTree();
         });
+
+        // Images (use your own or data URLs)
+        const folderImg = 'data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" fill="gold" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="6" width="16" height="10" rx="2"/><rect x="2" y="4" width="6" height="4" rx="1" fill="orange"/></svg>';
+        const bookmarkImg = 'data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" fill="dodgerblue" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="12" height="12" rx="2"/><rect x="7" y="7" width="6" height="6" rx="1" fill="white"/></svg>';
+        const popoutImg = 'data:image/svg+xml;utf8,<svg width="16" height="16" viewBox="0 0 16 16" fill="gray" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h12v12H2V2zm2 2v8h8V4H4zm4 1h2v2h-2V5zm-2 2h2v2H6V7z"/></svg>';
+        const plusImg = 'data:image/svg+xml;utf8,<svg width="16" height="16" viewBox="0 0 16 16" fill="gray" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="3" width="2" height="10"/><rect x="3" y="7" width="10" height="2"/></svg>';
+        const minusImg = 'data:image/svg+xml;utf8,<svg width="16" height="16" viewBox="0 0 16 16" fill="gray" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="10" height="2"/></svg>';
+
+        // Utility: Parse bookmarks
+        function parseBookmarks(raw, type) {
+            if (type === 'json') {
+                try {
+                    const data = JSON.parse(raw);
+                    // Firefox JSON: look for roots/bookmark_bar or children
+                    if (data.roots && data.roots.bookmark_bar) {
+                        return data.roots.bookmark_bar.children || [];
+                    }
+                    if (data.children) return data.children;
+                    return [];
+                } catch (e) { return []; }
+            } else if (type === 'html' || type === 'htm') {
+                // Parse Netscape HTML format
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(raw, 'text/html');
+                function walkDL(dl) {
+                    let tree = [];
+                    for (const node of dl.children) {
+                        if (node.tagName === 'DT') {
+                            const h3 = node.querySelector('h3');
+                            if (h3) {
+                                // Folder
+                                const folder = {
+                                    type: 'folder',
+                                    title: h3.textContent,
+                                    children: [],
+                                    expanded: false
+                                };
+                                const subDL = node.nextElementSibling;
+                                if (subDL && subDL.tagName === 'DL') {
+                                    folder.children = walkDL(subDL);
+                                }
+                                tree.push(folder);
+                            } else {
+                                // Bookmark
+                                const a = node.querySelector('a');
+                                if (a) {
+                                    tree.push({
+                                        type: 'bookmark',
+                                        title: a.textContent,
+                                        url: a.getAttribute('href')
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    return tree;
+                }
+                const rootDL = doc.querySelector('dl');
+                return rootDL ? walkDL(rootDL) : [];
+            }
+            return [];
+        }
+
+        // Render tree
+        function renderTree() {
+            const container = document.getElementById('treeview-container');
+            container.innerHTML = '';
+            let raw = localStorage.getItem('uploadedBookmarks');
+            let type = localStorage.getItem('uploadedBookmarksType');
+            if (!raw || !type) {
+                container.innerHTML = '<div class="tree-placeholder"><h2>No Bookmarks Uploaded</h2><p>Upload a bookmarks file in the preview frame.</p></div>';
+                return;
+            }
+            let tree = parseBookmarks(raw, type);
+            // Save parsed tree for persistence
+            localStorage.setItem('parsedBookmarksTree', JSON.stringify(tree));
+            function createNode(node, parentIdx = '') {
+                if (node.type === 'folder') {
+                    const folderDiv = document.createElement('div');
+                    folderDiv.style.display = 'flex';
+                    folderDiv.style.alignItems = 'center';
+                    folderDiv.style.margin = '2px 0';
+                    // Expand/collapse
+                    const toggle = document.createElement('img');
+                    toggle.src = node.expanded ? minusImg : plusImg;
+                    toggle.style.cursor = 'pointer';
+                    toggle.style.marginRight = '4px';
+                    toggle.width = 16;
+                    toggle.height = 16;
+                    toggle.onclick = function() {
+                        node.expanded = !node.expanded;
+                        renderTree();
+                    };
+                    folderDiv.appendChild(toggle);
+                    // Folder image
+                    const img = document.createElement('img');
+                    img.src = folderImg;
+                    img.width = 20;
+                    img.height = 20;
+                    img.style.marginRight = '6px';
+                    folderDiv.appendChild(img);
+                    // Folder text
+                    const span = document.createElement('span');
+                    span.textContent = node.title;
+                    span.style.fontWeight = 'bold';
+                    folderDiv.appendChild(span);
+                    container.appendChild(folderDiv);
+                    // Children
+                    if (node.expanded) {
+                        const childDiv = document.createElement('div');
+                        childDiv.style.marginLeft = '32px';
+                        for (let i = 0; i < node.children.length; i++) {
+                            createNode(node.children[i], parentIdx + '-' + i);
+                        }
+                    }
+                } else if (node.type === 'bookmark') {
+                    const bookmarkDiv = document.createElement('div');
+                    bookmarkDiv.style.display = 'flex';
+                    bookmarkDiv.style.alignItems = 'center';
+                    bookmarkDiv.style.margin = '2px 0';
+                    // Pop-out
+                    const pop = document.createElement('img');
+                    pop.src = popoutImg;
+                    pop.width = 16;
+                    pop.height = 16;
+                    pop.style.cursor = 'pointer';
+                    pop.style.marginRight = '4px';
+                    pop.onclick = function(e) {
+                        window.open(node.url, '_blank');
+                        e.stopPropagation();
+                    };
+                    bookmarkDiv.appendChild(pop);
+                    // Bookmark image
+                    const img = document.createElement('img');
+                    img.src = bookmarkImg;
+                    img.width = 20;
+                    img.height = 20;
+                    img.style.marginRight = '6px';
+                    bookmarkDiv.appendChild(img);
+                    // Bookmark text
+                    const span = document.createElement('span');
+                    span.textContent = node.title;
+                    span.style.cursor = 'pointer';
+                    span.onclick = function() {
+                        // Open in preview.html frame
+                        parent.frames['rightFrame'].location.href = node.url;
+                    };
+                    img.onclick = span.onclick;
+                    bookmarkDiv.appendChild(span);
+                    container.appendChild(bookmarkDiv);
+                }
+            }
+            for (let i = 0; i < tree.length; i++) {
+                createNode(tree[i], '' + i);
+            }
+        }
+
+        // On load, use persisted tree if available
+        function loadPersistedTree() {
+            let persisted = localStorage.getItem('parsedBookmarksTree');
+            if (persisted) {
+                localStorage.setItem('uploadedBookmarks', persisted);
+                localStorage.setItem('uploadedBookmarksType', 'json'); // treat as parsed
+            }
+        }
+        if (!localStorage.getItem('uploadedBookmarks')) {
+            loadPersistedTree();
+        }
+        renderTree();
     </script>
 </body>
 </html>

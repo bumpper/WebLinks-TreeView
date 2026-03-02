@@ -14,12 +14,12 @@
 </head>
 <body>
     <div id="dark-mode-toggle" class="toggle-switch"></div>
-    <a href="help.html" class="help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>
+    <!--<a href="help.html" class="help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>-->
     <style>
         .toggle-switch {
             position: absolute;
             top: 20px;
-            right: 90px;
+            right: 20px;    /* Change to right: 90px; if you unhide the ? Help button above. */
             display: inline-block;
             width: 50px;
             height: 25px;
@@ -94,8 +94,134 @@
         }
     </script>
     <div class="preview-placeholder">
-        <h2>Preview Placeholder</h2>
-        <p>This is where the bookmark preview will appear.</p>
+        <h2></h2>
+        <p></p>
+        <div id="upload-section" style="margin-top:2em;">
+        <!--<div id="upload-section" style="height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;">-->
+            <div id="drop-zone" style="margin-top:1em;padding:1.5em 1em;border:2px dashed #888;border-radius:8px;color:#888;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box;">
+                <p><label for="bookmark-upload" style="font-weight:bold;margin-bottom:0.5em;">Upload Bookmarks (.json, .html, .htm)</label></p>
+                <p><input type="file" id="bookmark-upload" accept=".json,.html,.htm" style="margin-bottom:0.5em;"></p>
+                <p><span style="color:#888;">Or drag and drop the file here.</span></p>
+            </div>
+            <div id="upload-message" style="margin-top:1em;color:#555;"></div>
+                    <div id="browser-help-list" style="width:100%;margin-top:2em;text-align:left;">
+                        <div class="browser-help-item" data-browser="Brave" style="cursor:pointer;padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;">Brave</div>
+                        <div class="browser-help-content" style="display:none;padding-left:16px;">
+                            <ol style="margin:0 0 0 16px;">
+                                <li>Open Brave browser.</li>
+                                <li>Click the three-line menu in the top-right corner.</li>
+                                <li>Select <b>Bookmarks</b> &gt; <b>Bookmark manager</b>.</li>
+                                <li>Click the three-dot menu in the Bookmark manager.</li>
+                                <li>Select <b>Export bookmarks</b> and save the file.</li>
+                            </ol>
+                        </div>
+                        <div class="browser-help-item" data-browser="Chrome" style="cursor:pointer;padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;">Chrome</div>
+                        <div class="browser-help-content" style="display:none;padding-left:16px;">
+                            <ol style="margin:0 0 0 16px;">
+                                <li>Open Chrome browser.</li>
+                                <li>Click the three-dot menu in the top-right corner.</li>
+                                <li>Select <b>Bookmarks</b> &gt; <b>Bookmark manager</b>.</li>
+                                <li>Click the three-dot menu in the Bookmark manager.</li>
+                                <li>Select <b>Export bookmarks</b> and save the file.</li>
+                            </ol>
+                        </div>
+                        <div class="browser-help-item" data-browser="Edge" style="cursor:pointer;padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;">Edge</div>
+                        <div class="browser-help-content" style="display:none;padding-left:16px;">
+                            <ol style="margin:0 0 0 16px;">
+                                <li>Open Microsoft Edge browser.</li>
+                                <li>Click the three-dot menu in the top-right corner.</li>
+                                <li>Select <b>Favorites</b> &gt; <b>Manage favorites</b>.</li>
+                                <li>Click the three-dot menu in the Favorites manager.</li>
+                                <li>Select <b>Export favorites</b> and save the file.</li>
+                            </ol>
+                        </div>
+                        <div class="browser-help-item" data-browser="Firefox" style="cursor:pointer;padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;">Firefox</div>
+                        <div class="browser-help-content" style="display:none;padding-left:16px;">
+                            <ol style="margin:0 0 0 16px;">
+                                <li>Open Firefox browser.</li>
+                                <li>Click the Library icon or open <b>Bookmarks</b> from the menu.</li>
+                                <li>Select <b>Show All Bookmarks</b> (or <b>Manage Bookmarks</b>).</li>
+                                <li>Click <b>Import and Backup</b> at the top.</li>
+                                <li>Select <b>Export Bookmarks to HTML</b> or <b>Backup</b> to JSON.</li>
+                            </ol>
+                        </div>
+                        <div class="browser-help-item" data-browser="Opera" style="cursor:pointer;padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;">Opera</div>
+                        <div class="browser-help-content" style="display:none;padding-left:16px;">
+                            <ol style="margin:0 0 0 16px;">
+                                <li>Open Opera browser.</li>
+                                <li>Click the heart icon in the sidebar or go to <b>Bookmarks</b>.</li>
+                                <li>Click the <b>Import/Export</b> button.</li>
+                                <li>Select <b>Export bookmarks</b> and save the file.</li>
+                            </ol>
+                        </div>
+                        <div class="browser-help-item" data-browser="Safari" style="cursor:pointer;padding:8px 0;border-bottom:1px solid #eee;font-weight:bold;">Safari</div>
+                        <div class="browser-help-content" style="display:none;padding-left:16px;">
+                            <ol style="margin:0 0 0 16px;">
+                                <li>Open Safari browser.</li>
+                                <li>In the menu bar, click <b>File</b> &gt; <b>Export Bookmarks...</b></li>
+                                <li>Choose a location and save the bookmarks file.</li>
+                            </ol>
+                        </div>
+                    </div>
+        </div>
     </div>
+    <script>
+        // ...existing code...
+        // File upload logic
+        const uploadInput = document.getElementById('bookmark-upload');
+        const dropZone = document.getElementById('drop-zone');
+        const uploadMessage = document.getElementById('upload-message');
+
+        function handleFile(file) {
+            const allowed = ['json', 'html', 'htm'];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!allowed.includes(ext)) {
+                uploadMessage.textContent = 'Invalid file type. Only .json, .html, .htm allowed.';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                localStorage.setItem('uploadedBookmarks', e.target.result);
+                localStorage.setItem('uploadedBookmarksType', ext);
+                uploadMessage.textContent = 'Bookmarks uploaded! Treeview will update.';
+                // Optionally, trigger treeview update via storage event
+                localStorage.setItem('bookmarksUpdated', Date.now().toString());
+            };
+            reader.readAsText(file);
+        }
+
+        uploadInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.style.background = '#eef';
+        });
+        dropZone.addEventListener('dragleave', function(e) {
+            dropZone.style.background = '';
+        });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.style.background = '';
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Expand/collapse browser help items
+        document.querySelectorAll('.browser-help-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+                const content = item.nextElementSibling;
+                if (content.style.display === 'none' || !content.style.display) {
+                    content.style.display = 'block';
+                } else {
+                    content.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
