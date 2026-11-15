@@ -327,6 +327,8 @@ a.pane-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 1
 #btn-upload:hover { color: #0078d4; }
 #btn-download:hover { color: #1e8e3e; }
 #btn-sync:hover { color: #b8860b; }
+#btn-popout-all:hover,
+#btn-popout-all[aria-pressed="true"] { color: #4a90d9; }
 #btn-expand:hover,
 #btn-collapse:hover { color: #d97706; }
 @media (prefers-color-scheme: dark) {
@@ -334,6 +336,8 @@ a.pane-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 1
     #btn-upload:hover { color: #6cb6ff; }
     #btn-download:hover { color: #6ed17f; }
     #btn-sync:hover { color: #ffd75e; }
+    #btn-popout-all:hover,
+    #btn-popout-all[aria-pressed="true"] { color: #6cb6ff; }
     #btn-expand:hover,
     #btn-collapse:hover { color: #ffab5e; }
 }
@@ -582,6 +586,9 @@ li.node.separator .edit-btn { position: absolute; top: 3px; right: 4px; }
         </button>
         <button id="btn-sync" class="tool" type="button" title="Sync bookmarks" aria-label="Sync bookmarks">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 7.4a5.5 5.5 0 0 1 9.6-3.3"/><path d="M12.4 2.2v2.6H9.8"/><path d="M13.4 8.6a5.5 5.5 0 0 1-9.6 3.3"/><path d="M3.6 13.8v-2.6h2.6"/></svg>
+        </button>
+        <button id="btn-popout-all" class="tool" type="button" title="Open in new tabs" aria-label="Open in new tabs" aria-pressed="false">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.7 8.6v4.1c0 .5-.4.9-.9.9H3.2c-.5 0-.9-.4-.9-.9V4.2c0-.5.4-.9.9-.9h4.1"/><path d="M9.3 2.3h4.4v4.4"/><path d="M13.7 2.3L7.6 8.4"/></svg>
         </button>
         <button id="btn-expand" class="tool" type="button" title="Expand all folders" aria-label="Expand all folders">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5l4 4 4-4"/><path d="M4 3.5l4 4 4-4"/></svg>
@@ -1071,6 +1078,28 @@ li.node.separator .edit-btn { position: absolute; top: 3px; right: 4px; }
         window.location.href = url;
     }
 
+    var POPOUT_KEY = 'weblinksOpenInNewTabs';
+    var popoutButton = document.getElementById('btn-popout-all');
+    var popoutAll = false;
+    try { popoutAll = localStorage.getItem(POPOUT_KEY) === 'true'; } catch (err) { popoutAll = false; }
+
+    function applyPopoutState() {
+        popoutButton.setAttribute('aria-pressed', popoutAll ? 'true' : 'false');
+    }
+
+    applyPopoutState();
+
+    popoutButton.addEventListener('click', function () {
+        popoutAll = !popoutAll;
+        try { localStorage.setItem(POPOUT_KEY, popoutAll ? 'true' : 'false'); } catch (err) { /* storage may be blocked on file:// */ }
+        applyPopoutState();
+    });
+
+    function followBookmark(url) {
+        if (popoutAll) openLink(url);
+        else followLink(url);
+    }
+
     function showEditError(text) {
         editError.textContent = text;
         editError.hidden = false;
@@ -1378,7 +1407,7 @@ li.node.separator .edit-btn { position: absolute; top: 3px; right: 4px; }
         if (li.classList.contains('link') && e.detail <= 1) {
             var url = (li.__node || {}).u;
             if (e.target.closest('.ico.link-ico')) openLink(url);
-            else followLink(url);
+            else followBookmark(url);
         }
     });
 
@@ -1689,6 +1718,7 @@ li.node.separator .edit-btn { position: absolute; top: 3px; right: 4px; }
         var syncWasOpen = syncOverlay.classList.contains('open');
         var toastWasShown = toastEl.classList.contains('show');
         var toastWasText = toastEl.textContent;
+        var popoutWasPressed = popoutButton.getAttribute('aria-pressed') === 'true';
         var spinners = Array.prototype.slice.call(document.querySelectorAll('.tool.spinning'));
         syncOverlay.classList.remove('open');
         syncOverlay.setAttribute('aria-hidden', 'true');
@@ -1713,10 +1743,12 @@ li.node.separator .edit-btn { position: absolute; top: 3px; right: 4px; }
         selectionEl.title = '';
         document.getElementById('edit-overlay').hidden = true;
         treeRoot.textContent = '';
+        popoutButton.setAttribute('aria-pressed', 'false');
         for (var s = 0; s < spinners.length; s++) spinners[s].classList.remove('spinning');
 
         var html = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
 
+        popoutButton.setAttribute('aria-pressed', popoutWasPressed ? 'true' : 'false');
         if (syncWasOpen) syncOverlay.classList.add('open');
         if (toastWasShown) {
             toastEl.textContent = toastWasText;
