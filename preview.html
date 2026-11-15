@@ -149,6 +149,27 @@
             border-top-color: #888;
             border-left-color: #888;
         }
+        .browser-help-item.detected {
+            background: linear-gradient(90deg, #eaf2ff, #f7faff);
+            border-radius: 3px;
+            box-shadow: -3px 0 0 #0078d4, 0 0 0 1px #cfe0fb inset;
+        }
+        .browser-help-item.detected .browser-title { color: #005a9e; }
+        .browser-badge {
+            margin-left: 8px;
+            padding: 1px 6px;
+            border-radius: 9px;
+            background: #0078d4;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        body.dark-mode .browser-help-item.detected {
+            background: linear-gradient(90deg, #2b3a52, #26303f);
+            box-shadow: -3px 0 0 #8ab4f8, 0 0 0 1px #3d516e inset;
+        }
+        body.dark-mode .browser-help-item.detected .browser-title { color: #b5cefb; }
+        body.dark-mode .browser-badge { background: #8ab4f8; color: #1f1f1f; }
         body.dark-mode {
             background-color: #333;
             color: #fff;
@@ -569,7 +590,8 @@
             title.addEventListener('click', toggle);
         });
 
-        // Detect the browser being used so its export steps start expanded.
+        // Detect the browser being used so its export steps can be highlighted
+        // while every section stays collapsed.
         function detectBrowserName(ua) {
             if (!ua && navigator.brave) return 'Brave';
             ua = ua || navigator.userAgent || '';
@@ -582,16 +604,19 @@
             return '';
         }
 
-        (function expandDetectedBrowser() {
+        (function highlightDetectedBrowser() {
             const name = detectBrowserName();
             if (!name) return;
             const item = document.querySelector('.browser-help-item[data-browser="' + name + '"]');
             if (!item) return;
-            const content = item.nextElementSibling;
-            if (!content) return;
-            content.style.display = 'block';
-            item.querySelector('.arrow-up').style.display = 'none';
-            item.querySelector('.arrow-down').style.display = '';
+            item.classList.add('detected');
+            item.title = 'Your browser is ' + name;
+            const title = item.querySelector('.browser-title');
+            if (!title) return;
+            const badge = document.createElement('span');
+            badge.className = 'browser-badge';
+            badge.textContent = 'Your browser';
+            title.appendChild(badge);
         })();
 
         // Step links that open each browser's Bookmark Manager. Pages cannot open

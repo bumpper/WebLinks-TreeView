@@ -311,7 +311,7 @@
             font-size: 11px;
             user-select: none;
         }
-        .statusbar.error #status-count { color: var(--warn); font-weight: 600; }
+        .statusbar.error .status-sel { color: var(--warn); font-weight: 600; }
         .status-row {
             display: flex;
             align-items: center;
@@ -372,6 +372,11 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        .status-sel.message {
+            color: var(--fg);
+            white-space: normal;
+            line-height: 1.35;
         }
         .status-sel:empty { display: none; }
         .modal-overlay {
@@ -614,20 +619,35 @@
             var lastMessageRender = 0;
             var storageTimer = null;
             var autoExpanded = [];
+            var messageTimer = null;
 
-            function setCounts(text, isError) {
+            function setCounts(text) {
                 countEl.textContent = text;
+            }
+
+            function setMessage(text, isError) {
+                clearTimeout(messageTimer);
+                selectionEl.classList.add('message');
+                selectionEl.textContent = text;
+                selectionEl.title = text;
                 statusbar.classList.toggle('error', !!isError);
+            }
+
+            function clearMessage() {
+                clearTimeout(messageTimer);
+                selectionEl.classList.remove('message');
+                selectionEl.textContent = '';
+                selectionEl.title = '';
+                statusbar.classList.remove('error');
             }
 
             function updateCounts() {
                 if (!currentTree.length) {
-                    setCounts('No bookmarks', false);
+                    setCounts('No bookmarks');
                 } else {
                     setCounts(
                         stats.folders.toLocaleString() + ' folders \u00b7 ' +
-                        stats.links.toLocaleString() + ' links',
-                        false
+                        stats.links.toLocaleString() + ' links'
                     );
                 }
             }
@@ -738,6 +758,7 @@
 
             function afterTreeChange() {
                 stats = WeblinksBookmarks.countTree(currentTree);
+                clearMessage();
                 updateCounts();
                 var sourceName = WeblinksBookmarks.getSourceName();
                 WeblinksBookmarks.saveTree(currentTree, sourceName || undefined);
@@ -1076,8 +1097,7 @@
             function clearSelection() {
                 if (selectedLi) selectedLi.classList.remove('selected');
                 selectedLi = null;
-                selectionEl.textContent = '';
-                selectionEl.title = '';
+                clearMessage();
             }
 
             function showSelectionText(node) {
@@ -1085,6 +1105,9 @@
                 if (!node.sep && !Array.isArray(node.c) && node.u) {
                     text += (text ? ' \u2014 ' : '') + node.u;
                 }
+                clearTimeout(messageTimer);
+                selectionEl.classList.remove('message');
+                statusbar.classList.remove('error');
                 selectionEl.textContent = text;
                 selectionEl.title = text;
             }
@@ -1129,8 +1152,7 @@
                 url = String(url || '').trim();
                 if (!url) return '';
                 if (!isSafeUrl(url)) {
-                    selectionEl.textContent = 'Blocked unsafe link: ' + url;
-                    selectionEl.title = selectionEl.textContent;
+                    setMessage('Blocked unsafe link: ' + url, true);
                     return '';
                 }
                 return url;
@@ -1290,31 +1312,27 @@
                 if (!file) return;
                 var ext = file.name.indexOf('.') >= 0 ? file.name.split('.').pop().toLowerCase() : '';
                 if (['html', 'htm', 'json'].indexOf(ext) === -1) {
-                    setCounts('Unsupported file type. Choose an .html, .htm, or .json bookmarks export.', true);
+                    setMessage('Unsupported file type. Choose an .html, .htm, or .json bookmarks export.', true);
                     return;
                 }
-                setCounts('Reading ' + file.name + '\u2026', false);
+                setMessage('Reading ' + file.name + '\u2026', false);
                 file.text().then(function (raw) {
                     setTimeout(function () {
                         var result;
                         try {
                             result = WeblinksBookmarks.parseFileText(raw, file.name);
                         } catch (err) {
-                            setCounts('Could not parse ' + file.name + '.', true);
+                            setMessage('Could not parse ' + file.name + '.', true);
                             return;
                         }
                         if (!result.tree.length) {
-                            setCounts('No bookmarks were found in ' + file.name + '.', true);
+                            setMessage('No bookmarks were found in ' + file.name + '.', true);
                             return;
                         }
                         var saved = WeblinksBookmarks.saveTree(result.tree, file.name);
                         render(result.tree);
                         if (!saved.ok) {
-                            setCounts(
-                                stats.folders.toLocaleString() + ' folders \u00b7 ' +
-                                stats.links.toLocaleString() + ' links \u2014 not saved (browser storage is full)',
-                                true
-                            );
+                            setMessage('Imported, but not saved \u2014 browser storage is full.', true);
                         }
                         WeblinksBookmarks.postStatsToRightFrame({
                             folders: result.folders,
@@ -1325,7 +1343,7 @@
                         notifyAutoExport();
                     }, 20);
                 }).catch(function () {
-                    setCounts('Could not read ' + file.name + '.', true);
+                    setMessage('Could not read ' + file.name + '.', true);
                 });
             }
 
@@ -1440,7 +1458,7 @@
             });
             document.getElementById('btn-download').addEventListener('click', function () {
                 if (!currentTree.length) {
-                    setCounts('No bookmarks are available to download yet.', true);
+                    setMessage('No bookmarks are available to download yet.', true);
                     return;
                 }
                 var html = WeblinksBookmarks.buildStandaloneHTML(currentTree);
@@ -1523,7 +1541,7 @@
                         name: WeblinksBookmarks.getSourceName() || 'bookmarks'
                     });
                 } else {
-                    setCounts('No saved bookmarks to sync.', false);
+                    setMessage('No saved bookmarks to sync.', false);
                 }
                 stopSyncSpin();
             });
@@ -1705,8 +1723,8 @@
                     notifyAutoExport();
                 } else if (data.type === 'weblinks:sync-result') {
                     stopSyncSpin();
-                    setCounts(data.message || 'Sync complete.', !data.ok);
-                    setTimeout(updateCounts, 4000);
+                    setMessage(data.message || 'Sync complete.', !data.ok);
+                    setTimeout(clearMessage, 4000);
                 } else if (data.type === 'weblinks:tree-updated') {
                     if (Date.now() - lastMessageRender < 1500) return;
                     scheduleStorageRender();
