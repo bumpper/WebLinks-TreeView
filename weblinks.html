@@ -91,10 +91,66 @@
             min-width: 100px;
             max-width: 50vw;
         }
-        .right-frame {
+        .right-pane {
             flex: 1;
-            width: 80%;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
         }
+        .right-frame {
+            flex: 1 1 auto;
+            width: 100%;
+            height: auto;
+            min-height: 0;
+        }
+        .url-bar {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: stretch;
+            background: #ffffff;
+            border-bottom: 1px solid #d0d0d0;
+        }
+        #url-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 28px;
+            padding: 0 8px;
+            border: 0;
+            outline: none;
+            background: transparent;
+            color: #1f1f1f;
+            font: 12px "Segoe UI", Tahoma, Arial, sans-serif;
+        }
+        #url-input::placeholder {
+            color: #888888;
+            font-style: italic;
+            opacity: 0.75;
+        }
+        #url-input:focus { box-shadow: inset 0 -2px 0 #0078d4; }
+        #url-input.invalid { box-shadow: inset 0 -2px 0 #c42b1c; }
+        .url-go {
+            flex: 0 0 auto;
+            width: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #555555;
+            cursor: pointer;
+        }
+        .url-go:hover { color: #0078d4; }
+        .url-go:focus-visible { outline: 1px solid #0078d4; outline-offset: -2px; }
+        .url-go svg { width: 16px; height: 16px; }
+        .dark-mode .url-bar {
+            background: #1f1f1f;
+            border-bottom-color: #3a3a3a;
+        }
+        .dark-mode #url-input { color: #e8e8e8; }
+        .dark-mode #url-input::placeholder { color: #9a9a9a; }
+        .dark-mode .url-go { color: #bbbbbb; }
+        .dark-mode .url-go:hover { color: #6cb6ff; }
         .divider {
             width: 6px;
             background: #ccc;
@@ -182,14 +238,277 @@
         .dark-mode .help-btn:hover {
             background-color: #555;
         }
+        .drop-overlay {
+            position: fixed;
+            inset: 6px;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #0078d4;
+            border-radius: 8px;
+            background: rgba(240, 240, 240, 0.86);
+            pointer-events: none;
+        }
+        .dark-mode .drop-overlay {
+            background: rgba(26, 26, 26, 0.86);
+        }
+        body.dragging .drop-overlay {
+            display: flex;
+        }
+        .drop-card {
+            padding: 10px 18px;
+            border-radius: 6px;
+            background: #0078d4;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            z-index: 1001;
+            max-width: 80vw;
+            padding: 10px 16px;
+            border-radius: 6px;
+            background: #323232;
+            color: #fff;
+            font-size: 13px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .sync-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.38);
+        }
+        .sync-overlay.open {
+            display: flex;
+        }
+        .sync-modal {
+            width: min(560px, 94vw);
+            max-height: 86vh;
+            overflow: auto;
+            padding: 18px 20px 16px;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #1f1f1f;
+            font: 13px/1.45 "Segoe UI", Tahoma, Arial, sans-serif;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+        }
+        .dark-mode .sync-modal {
+            background: #252526;
+            color: #f0f0f0;
+        }
+        .sync-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .sync-modal-head h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .sync-close {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background: transparent;
+            color: inherit;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .sync-close:hover {
+            background: rgba(127, 127, 127, 0.18);
+        }
+        .sync-lead {
+            margin: 8px 0 12px;
+            color: #555;
+        }
+        .dark-mode .sync-lead {
+            color: #bdbdbd;
+        }
+        .sync-providers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .sync-provider {
+            padding: 9px 10px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            background: #f7f7f7;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+        .sync-provider:hover {
+            border-color: #0078d4;
+        }
+        .sync-provider.selected {
+            border-color: #0078d4;
+            box-shadow: inset 0 0 0 1px #0078d4;
+            background: #eef6ff;
+        }
+        .dark-mode .sync-provider {
+            background: #2f2f31;
+            border-color: #4a4a4d;
+        }
+        .dark-mode .sync-provider.selected {
+            background: #1d3a52;
+            border-color: #4da3e8;
+            box-shadow: inset 0 0 0 1px #4da3e8;
+        }
+        .sync-instructions {
+            margin: 12px 0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #f3f3f3;
+        }
+        .dark-mode .sync-instructions {
+            background: #2f2f31;
+        }
+        .sync-instructions p {
+            margin: 0 0 6px;
+        }
+        .sync-instructions a {
+            color: #005a9e;
+        }
+        .dark-mode .sync-instructions a {
+            color: #7fbcff;
+        }
+        .sync-folder {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .sync-folder label {
+            flex: 0 0 auto;
+            font-weight: 600;
+        }
+        .sync-folder input {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 28px;
+            padding: 3px 8px;
+            border: 1px solid #c8c8c8;
+            border-radius: 4px;
+            background: #ffffff;
+            color: inherit;
+            font: inherit;
+        }
+        .dark-mode .sync-folder input {
+            background: #1f1f1f;
+            border-color: #555555;
+            color: #f0f0f0;
+        }
+        .sync-folder .primary-btn {
+            flex: 0 0 auto;
+            padding: 6px 12px;
+            border: 0;
+            border-radius: 4px;
+            background: #0078d4;
+            color: #ffffff;
+            font: inherit;
+            cursor: pointer;
+        }
+        .sync-folder .primary-btn:hover {
+            background: #006cbe;
+        }
+        .sync-status {
+            min-height: 18px;
+            margin: 10px 0 0;
+            color: #005a9e;
+        }
+        .dark-mode .sync-status {
+            color: #7fbcff;
+        }
+        .sync-status.error {
+            color: #b0272e;
+        }
+        .dark-mode .sync-status.error {
+            color: #ff8b8b;
+        }
+        .sync-note {
+            margin: 10px 0 0;
+            font-size: 11px;
+            color: #666666;
+        }
+        .dark-mode .sync-note {
+            color: #a5a5a5;
+        }
     </style>
 </head>
 <body>
     <div class="split-container" id="splitContainer">
         <iframe src="treeview.html" class="frame left-frame" id="leftFrame" name="leftFrame" title="Treeview"></iframe>
         <div class="divider" id="divider"></div>
-        <iframe src="preview.html" class="frame right-frame" id="rightFrame" name="rightFrame" title="Preview"></iframe>
+        <div class="right-pane">
+            <div class="url-bar">
+                <input id="url-input" type="text" placeholder="https://" autocomplete="off" spellcheck="false" aria-label="Load a URL in the right panel">
+                <button id="url-go" class="url-go" type="button" title="Load URL" aria-label="Load URL">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9"/><path d="M8.5 4.5L12 8l-3.5 3.5"/></svg>
+                </button>
+            </div>
+            <iframe src="preview.html" class="frame right-frame" id="rightFrame" name="rightFrame" title="Preview"></iframe>
+        </div>
     </div>
+
+    <div id="drop-overlay" class="drop-overlay" aria-hidden="true">
+        <div class="drop-card">Drop the bookmarks file to build the tree</div>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="sync-overlay" class="sync-overlay" role="dialog" aria-modal="true" aria-labelledby="sync-title">
+        <div class="sync-modal">
+            <div class="sync-modal-head">
+                <h2 id="sync-title">Set up cloud sync</h2>
+                <button id="sync-close" class="sync-close" type="button" title="Close" aria-label="Close">&times;</button>
+            </div>
+            <p class="sync-lead">Keep a synced copy of <b>bookmarks.html</b> in a cloud folder. Sign in to your provider, then choose the folder it syncs to on this computer. WebLinks writes the file there and keeps both copies matched each time you sync.</p>
+            <div id="sync-providers" class="sync-providers" role="listbox" aria-label="Cloud storage provider">
+                <button class="sync-provider" type="button" data-provider="Apple iCloud" data-url="https://www.icloud.com/">Apple iCloud</button>
+                <button class="sync-provider" type="button" data-provider="Dropbox" data-url="https://www.dropbox.com/login">Dropbox</button>
+                <button class="sync-provider" type="button" data-provider="Google Drive" data-url="https://drive.google.com/">Google Drive</button>
+                <button class="sync-provider" type="button" data-provider="Microsoft OneDrive" data-url="https://onedrive.live.com/">Microsoft OneDrive</button>
+                <button class="sync-provider" type="button" data-provider="pCloud" data-url="https://my.pcloud.com/">pCloud</button>
+                <button class="sync-provider" type="button" data-provider="Proton Drive" data-url="https://drive.proton.me/">Proton Drive</button>
+                <button class="sync-provider" type="button" data-provider="Local folder" data-url="">Local folder</button>
+            </div>
+            <div id="sync-instructions" class="sync-instructions">
+                <p id="sync-instructions-text"></p>
+                <a id="sync-open-provider" href="#" target="_blank" rel="noopener">Open provider sign-in</a>
+            </div>
+            <div class="sync-folder">
+                <label for="sync-path">Folder</label>
+                <input id="sync-path" type="text" spellcheck="false" autocomplete="off">
+                <button id="sync-choose" class="primary-btn" type="button">Choose folder&hellip;</button>
+            </div>
+            <p id="sync-status" class="sync-status" role="status"></p>
+            <p class="sync-note">The path is a reminder of where your cloud folder lives; the browser asks you to confirm the folder before anything is written. Bookmarks are only shared through the folder you choose.</p>
+        </div>
+    </div>
+
+    <script src="bookmarks.js?v=3"></script>
 
     <script>
         // Restore divider position from localStorage
@@ -199,13 +518,8 @@
         let isDragging = false;
         function setLeftFrameWidth(px) {
             leftFrame.style.width = px + 'px';
-            localStorage.setItem('dividerPosition', px);
         }
-        // On load, restore divider position
-        const savedDivider = localStorage.getItem('dividerPosition');
-        if (savedDivider) {
-            setLeftFrameWidth(Number(savedDivider));
-        }
+        setLeftFrameWidth(300);
         divider.addEventListener('mousedown', function(e) {
             isDragging = true;
             divider.classList.add('dragging');
@@ -228,6 +542,47 @@
             }
         });
 
+        // Right-panel URL bar
+        const urlInput = document.getElementById('url-input');
+        const urlGo = document.getElementById('url-go');
+        const rightFrame = document.getElementById('rightFrame');
+        let urlErrorTimer = null;
+
+        function flagUrlError() {
+            urlInput.classList.add('invalid');
+            clearTimeout(urlErrorTimer);
+            urlErrorTimer = setTimeout(function () {
+                urlInput.classList.remove('invalid');
+            }, 1200);
+            urlInput.focus();
+        }
+
+        function loadUrlFromBar() {
+            let value = urlInput.value.trim();
+            if (!value) {
+                flagUrlError();
+                return;
+            }
+            if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) value = 'https://' + value;
+            let protocol = '';
+            try { protocol = new URL(value).protocol; } catch (err) { protocol = ''; }
+            if (['http:', 'https:', 'file:', 'ftp:'].indexOf(protocol) === -1) {
+                flagUrlError();
+                return;
+            }
+            rightFrame.src = value;
+            urlInput.blur();
+            window.postMessage({ type: 'weblinks:right-location', href: value, title: '' }, '*');
+        }
+
+        urlGo.addEventListener('click', loadUrlFromBar);
+        urlInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                loadUrlFromBar();
+            }
+        });
+
         // Restore dark mode from localStorage
         const body = document.body;
         function applyDarkMode() {
@@ -245,4 +600,727 @@
                 applyDarkMode();
             }
         });
+    </script>
+    <script>
+        (function () {
+            'use strict';
+
+            var toast = document.getElementById('toast');
+            var toastTimer = null;
+
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(function () {
+                    toast.classList.remove('show');
+                }, 4000);
+            }
+
+            function importFile(file) {
+                if (!file) return;
+                var ext = file.name.indexOf('.') >= 0 ? file.name.split('.').pop().toLowerCase() : '';
+                if (['html', 'htm', 'json'].indexOf(ext) === -1) {
+                    showToast('Unsupported file type. Choose an .html, .htm, or .json bookmarks export.');
+                    return;
+                }
+                showToast('Reading ' + file.name + '\u2026');
+                file.text().then(function (raw) {
+                    setTimeout(function () {
+                        var result;
+                        try {
+                            result = WeblinksBookmarks.parseFileText(raw, file.name);
+                        } catch (err) {
+                            showToast('Could not parse ' + file.name + '.');
+                            return;
+                        }
+                        if (!result.tree.length) {
+                            showToast('No bookmarks were found in ' + file.name + '.');
+                            return;
+                        }
+                        var saved = WeblinksBookmarks.saveTree(result.tree, file.name);
+                        var stats = {
+                            folders: result.folders,
+                            links: result.links,
+                            name: file.name,
+                            saved: saved.ok
+                        };
+                        try {
+                            if (window.frames['leftFrame']) {
+                                window.frames['leftFrame'].postMessage({
+                                    type: 'weblinks:render-tree',
+                                    tree: result.tree,
+                                    stats: stats
+                                }, '*');
+                            }
+                        } catch (err) { /* ignore */ }
+
+                        showToast(
+                            'Imported ' + result.folders.toLocaleString() + ' folders and ' +
+                            result.links.toLocaleString() + ' links' +
+                            (saved.ok ? '' : ' (not saved: browser storage is full)')
+                        );
+                        if (window.WeblinksSync) window.WeblinksSync.noteImport(result.tree);
+                    }, 20);
+                }).catch(function () {
+                    showToast('Could not read ' + file.name + '.');
+                });
+            }
+
+            function hasFiles(e) {
+                return !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1);
+            }
+
+            var dragDepth = 0;
+            window.addEventListener('dragenter', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                dragDepth++;
+                document.body.classList.add('dragging');
+            });
+            window.addEventListener('dragover', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+            window.addEventListener('dragleave', function (e) {
+                if (!hasFiles(e)) return;
+                dragDepth = Math.max(0, dragDepth - 1);
+                if (!dragDepth) document.body.classList.remove('dragging');
+            });
+            window.addEventListener('drop', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                dragDepth = 0;
+                document.body.classList.remove('dragging');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    importFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            var SIDEBAR_DEFAULT_WIDTH = 300;
+            var SIDEBAR_COLLAPSED_WIDTH = 32;
+            var lastRightHref = '';
+            var lastRightTitle = '';
+            var urlInputEl = document.getElementById('url-input');
+
+            window.addEventListener('message', function (e) {
+                var data = e.data;
+                if (!data || typeof data !== 'object') return;
+                if (data.type === 'weblinks:dark-mode') {
+                    document.body.classList.toggle('dark-mode', !!data.dark);
+                    return;
+                }
+                if (data.type === 'weblinks:sidebar') {
+                    var frame = document.getElementById('leftFrame');
+                    if (!frame) return;
+                    if (data.collapsed) {
+                        frame.style.minWidth = '0';
+                        frame.style.width = SIDEBAR_COLLAPSED_WIDTH + 'px';
+                    } else {
+                        frame.style.minWidth = '';
+                        frame.style.width = SIDEBAR_DEFAULT_WIDTH + 'px';
+                    }
+                    return;
+                }
+                if (data.type === 'weblinks:request-tree') {
+                    var stored = WeblinksBookmarks.loadTree();
+                    if (stored.length) {
+                        var counts = WeblinksBookmarks.countTree(stored);
+                        WeblinksBookmarks.postToLeftFrame(stored, {
+                            folders: counts.folders,
+                            links: counts.links,
+                            name: WeblinksBookmarks.getSourceName() || 'bookmarks'
+                        });
+                    }
+                    try {
+                        if (window.frames['rightFrame']) {
+                            window.frames['rightFrame'].postMessage({ type: 'weblinks:request-tree' }, '*');
+                        }
+                    } catch (err) { /* ignore */ }
+                    return;
+                }
+                if (data.type === 'weblinks:right-navigate' && typeof data.url === 'string') {
+                    var target = data.url.trim();
+                    var targetProtocol = '';
+                    try { targetProtocol = new URL(target).protocol; } catch (err) { targetProtocol = ''; }
+                    if (['http:', 'https:', 'file:', 'ftp:'].indexOf(targetProtocol) === -1) return;
+                    var navFrame = document.getElementById('rightFrame');
+                    if (!navFrame) return;
+                    navFrame.src = target;
+                    lastRightHref = target;
+                    lastRightTitle = '';
+                    if (document.activeElement !== urlInputEl) urlInputEl.value = target;
+                    harvestTitle(target);
+                    return;
+                }
+                if (data.type === 'weblinks:forward-to-left' && Array.isArray(data.tree)) {
+                    WeblinksBookmarks.postToLeftFrame(data.tree, data.stats);
+                    return;
+                }
+                if (data.type === 'weblinks:forward-to-right' && data.stats) {
+                    WeblinksBookmarks.postStatsToRightFrame(data.stats);
+                    return;
+                }
+                if (data.type === 'weblinks:clear-tree') {
+                    WeblinksBookmarks.clearTree();
+                    try {
+                        if (window.frames['rightFrame']) {
+                            window.frames['rightFrame'].postMessage({ type: 'weblinks:clear-tree' }, '*');
+                        }
+                    } catch (err) { /* ignore */ }
+                    return;
+                }
+                if (data.type === 'weblinks:right-location') {
+                    if (typeof data.href !== 'string') return;
+                    if (!data.href || /\/preview\.html(?:[?#].*)?$/i.test(data.href)) {
+                        lastRightHref = '';
+                        lastRightTitle = '';
+                        if (document.activeElement !== urlInputEl) urlInputEl.value = '';
+                        return;
+                    }
+                    var unchanged = data.href === lastRightHref;
+                    lastRightHref = data.href;
+                    lastRightTitle = unchanged && data.title === '' ? lastRightTitle : (typeof data.title === 'string' ? data.title : '');
+                    if (document.activeElement !== urlInputEl) urlInputEl.value = lastRightHref;
+                    if (!lastRightTitle) harvestTitle(lastRightHref);
+                    return;
+                }
+                if (data.type === 'weblinks:request-right-location') {
+                    if (!lastRightTitle) {
+                        var directTitle = readRightFrameTitle(lastRightHref);
+                        if (directTitle) lastRightTitle = directTitle;
+                    }
+                    if (e.source) {
+                        e.source.postMessage({
+                            type: 'weblinks:right-location',
+                            href: lastRightHref,
+                            title: lastRightTitle
+                        }, '*');
+                    }
+                    if (!lastRightTitle) harvestTitle(lastRightHref);
+                }
+            });
+
+            // Cross-origin pages hide their title from the parent page, so fall
+            // back to fetching the page title through reader services.
+            var TITLE_SOURCES = [
+                function (href) { return 'https://api.microlink.io/?url=' + encodeURIComponent(href); },
+                function (href) { return 'https://r.jina.ai/' + href; }
+            ];
+            var harvestedHref = '';
+
+            function readRightFrameTitle(href) {
+                try {
+                    var rf = document.getElementById('rightFrame');
+                    var doc = rf && rf.contentDocument;
+                    if (!doc) return '';
+                    var loc = doc.location ? doc.location.href : '';
+                    if (!loc || /\/preview\.html(?:[?#].*)?$/i.test(loc)) return '';
+                    if (href) {
+                        var a = '', b = href;
+                        try { a = new URL(loc).href; } catch (err) { a = loc; }
+                        try { b = new URL(href).href; } catch (err) { b = href; }
+                        if (a !== b) return '';
+                    }
+                    var t = doc.title;
+                    if (t) return String(t).replace(/\s+/g, ' ').trim();
+                } catch (err) { /* cross-origin page */ }
+                return '';
+            }
+
+            function decodeHtml(text) {
+                var area = document.createElement('textarea');
+                area.innerHTML = text;
+                return area.value;
+            }
+
+            function extractTitle(text) {
+                var m = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(text);
+                if (m) return decodeHtml(m[1]).replace(/\s+/g, ' ').trim();
+                var j = /"title"\s*:\s*"((?:[^"\\]|\\.){2,300})"/.exec(text);
+                if (j) {
+                    try {
+                        return JSON.parse('"' + j[1] + '"').replace(/\s+/g, ' ').trim();
+                    } catch (err) { /* ignore */ }
+                }
+                var t = /^Title:\s*(.+)$/m.exec(text);
+                return t ? t[1].trim() : '';
+            }
+
+            function publishRightTitle(href, title) {
+                if (href !== lastRightHref || !title) return;
+                lastRightTitle = title;
+                try {
+                    if (window.frames['leftFrame']) {
+                        window.frames['leftFrame'].postMessage({
+                            type: 'weblinks:right-location',
+                            href: lastRightHref,
+                            title: lastRightTitle
+                        }, '*');
+                    }
+                } catch (err) { /* ignore */ }
+            }
+
+            function fetchTitleFrom(url, href) {
+                var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timer = controller ? setTimeout(function () { controller.abort(); }, 8000) : null;
+                return fetch(url, {
+                    cache: 'no-store',
+                    signal: controller ? controller.signal : undefined
+                }).then(function (response) {
+                    clearTimeout(timer);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    return response.text();
+                }).then(function (text) {
+                    var title = extractTitle(text);
+                    if (!title) throw new Error('No title');
+                    return title;
+                }).catch(function (err) {
+                    clearTimeout(timer);
+                    throw err;
+                });
+            }
+
+            function harvestTitle(href) {
+                if (!href || !/^https?:/i.test(href) || harvestedHref === href) return;
+                harvestedHref = href;
+                var attempt = 0;
+                function next() {
+                    if (attempt >= TITLE_SOURCES.length) {
+                        try {
+                            publishRightTitle(href, new URL(href).hostname.replace(/^www\./, ''));
+                        } catch (err) { /* ignore */ }
+                        return;
+                    }
+                    fetchTitleFrom(TITLE_SOURCES[attempt++](href), href).then(function (title) {
+                        publishRightTitle(href, title);
+                    }).catch(function () {
+                        next();
+                    });
+                }
+                next();
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            'use strict';
+
+            var PROVIDER_KEY = 'weblinksSyncProvider';
+            var FOLDER_KEY = 'weblinksSyncFolderName';
+            var DB_NAME = 'weblinks-sync';
+            var STORE = 'handles';
+            var HANDLE_KEY = 'folder';
+            var FILE_NAME = 'bookmarks.html';
+
+            var overlay = document.getElementById('sync-overlay');
+            var statusEl = document.getElementById('sync-status');
+            var pathInput = document.getElementById('sync-path');
+            var chooseBtn = document.getElementById('sync-choose');
+            var instructionsText = document.getElementById('sync-instructions-text');
+            var openLink = document.getElementById('sync-open-provider');
+            var providers = Array.prototype.slice.call(document.querySelectorAll('.sync-provider'));
+
+            var selectedProvider = 'Local folder';
+            var savedHandle = null;
+            var pendingReply = false;
+            var modalMode = 'setup';
+            var autoTimer = null;
+
+            var PROVIDER_STEPS = {
+                'Apple iCloud': 'Sign in to iCloud and turn on iCloud Drive on this computer, then choose your iCloud Drive folder below.',
+                'Dropbox': 'Sign in to Dropbox and install the Dropbox desktop app so the folder syncs locally, then choose your Dropbox folder below.',
+                'Google Drive': 'Sign in to Google Drive and install Google Drive for desktop, then choose your Google Drive folder below.',
+                'Microsoft OneDrive': 'Sign in to OneDrive and use the OneDrive desktop app, then choose your OneDrive folder below.',
+                'pCloud': 'Sign in to pCloud and install pCloud Drive, then choose your pCloud Drive folder below.',
+                'Proton Drive': 'Sign in to Proton Drive and install Proton Drive for desktop, then choose your Proton Drive folder below.',
+                'Local folder': 'Choose any folder on this computer. The browser will ask you to confirm access.'
+            };
+
+            function showSyncToast(message) {
+                var toast = document.getElementById('toast');
+                if (!toast) return;
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(showSyncToast.timer);
+                showSyncToast.timer = setTimeout(function () {
+                    toast.classList.remove('show');
+                }, 4000);
+            }
+
+            function readConfig(key) {
+                try { return localStorage.getItem(key) || ''; } catch (err) { return ''; }
+            }
+
+            function writeConfig(key, value) {
+                try {
+                    if (value) localStorage.setItem(key, value);
+                    else localStorage.removeItem(key);
+                } catch (err) { /* ignore */ }
+            }
+
+            function defaultFolderHint() {
+                var ua = navigator.userAgent;
+                if (/Windows/i.test(ua)) return '%USERPROFILE%';
+                if (/Macintosh|Mac OS X|Linux/i.test(ua)) return '~';
+                return '~';
+            }
+
+            function openDb() {
+                return new Promise(function (resolve, reject) {
+                    if (!window.indexedDB) { reject(new Error('This browser cannot remember folder access.')); return; }
+                    var req = indexedDB.open(DB_NAME, 1);
+                    req.onupgradeneeded = function () {
+                        if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE);
+                    };
+                    req.onsuccess = function () { resolve(req.result); };
+                    req.onerror = function () { reject(req.error || new Error('Could not open local storage.')); };
+                });
+            }
+
+            function dbGet() {
+                return openDb().then(function (db) {
+                    return new Promise(function (resolve, reject) {
+                        var tx = db.transaction(STORE, 'readonly');
+                        var req = tx.objectStore(STORE).get(HANDLE_KEY);
+                        req.onsuccess = function () { resolve(req.result || null); };
+                        req.onerror = function () { reject(req.error); };
+                    });
+                });
+            }
+
+            function dbSet(handle) {
+                return openDb().then(function (db) {
+                    return new Promise(function (resolve, reject) {
+                        var tx = db.transaction(STORE, 'readwrite');
+                        tx.objectStore(STORE).put(handle, HANDLE_KEY);
+                        tx.oncomplete = function () { resolve(); };
+                        tx.onerror = function () { reject(tx.error); };
+                    });
+                });
+            }
+
+            function setStatus(message, isError) {
+                statusEl.textContent = message || '';
+                statusEl.classList.toggle('error', !!isError);
+            }
+
+            function sendSyncResult(message, ok) {
+                try {
+                    if (window.frames['leftFrame']) {
+                        window.frames['leftFrame'].postMessage({
+                            type: 'weblinks:sync-result',
+                            message: message,
+                            ok: !!ok
+                        }, '*');
+                    }
+                } catch (err) { /* ignore */ }
+            }
+
+            function selectProvider(btn) {
+                if (!btn) return;
+                selectedProvider = btn.getAttribute('data-provider');
+                for (var i = 0; i < providers.length; i++) {
+                    var p = providers[i];
+                    var on = p === btn;
+                    p.classList.toggle('selected', on);
+                    p.setAttribute('aria-selected', on ? 'true' : 'false');
+                }
+                instructionsText.textContent = PROVIDER_STEPS[selectedProvider] || '';
+                var url = btn.getAttribute('data-url');
+                if (url) {
+                    openLink.hidden = false;
+                    openLink.href = url;
+                    openLink.textContent = 'Open ' + selectedProvider + ' sign-in';
+                } else {
+                    openLink.hidden = true;
+                    openLink.removeAttribute('href');
+                }
+            }
+
+            function closeSyncModal() {
+                overlay.classList.remove('open');
+                overlay.setAttribute('aria-hidden', 'true');
+                if (pendingReply) {
+                    pendingReply = false;
+                    sendSyncResult('Sync setup closed.', true);
+                }
+            }
+
+            function openSyncModal(mode) {
+                modalMode = mode === 'reconnect' ? 'reconnect' : 'setup';
+                pendingReply = true;
+                setStatus('');
+
+                var folderName = readConfig(FOLDER_KEY);
+                pathInput.value = folderName || defaultFolderHint();
+                chooseBtn.textContent = modalMode === 'reconnect' ? 'Reconnect folder\u2026' : 'Choose folder\u2026';
+
+                var wanted = readConfig(PROVIDER_KEY);
+                var match = null;
+                for (var i = 0; i < providers.length; i++) {
+                    if (providers[i].getAttribute('data-provider') === wanted) match = providers[i];
+                }
+                selectProvider(match || providers[providers.length - 1]);
+
+                if (!('showDirectoryPicker' in window)) {
+                    chooseBtn.disabled = true;
+                    setStatus('This browser cannot write to a folder. Use the Download button to save bookmarks.html into your cloud folder instead.', true);
+                } else {
+                    chooseBtn.disabled = false;
+                    if (modalMode === 'reconnect') setStatus('Reconnect the saved folder to continue syncing.');
+                    else if (folderName) setStatus('Syncing with \u201c' + folderName + '\u201d.');
+                }
+
+                overlay.classList.add('open');
+                overlay.setAttribute('aria-hidden', 'false');
+                document.getElementById('sync-close').focus();
+            }
+
+            function queryPermission(handle) {
+                return Promise.resolve()
+                    .then(function () { return handle.queryPermission({ mode: 'readwrite' }); })
+                    .catch(function () { return 'prompt'; });
+            }
+
+            async function readRemote(dir) {
+                try {
+                    var fh = await dir.getFileHandle(FILE_NAME);
+                    var file = await fh.getFile();
+                    return { file: file, text: await file.text() };
+                } catch (err) {
+                    if (err && (err.name === 'NotFoundError' || err.name === 'TypeMismatchError')) return null;
+                    throw err;
+                }
+            }
+
+            async function writeRemote(dir, html) {
+                var fh = await dir.getFileHandle(FILE_NAME, { create: true });
+                var writer = await fh.createWritable();
+                await writer.write(html);
+                await writer.close();
+            }
+
+            function treeFromSyncedText(text) {
+                if (!text) return [];
+                try {
+                    var doc = new DOMParser().parseFromString(text, 'text/html');
+                    var el = doc.getElementById('bookmark-data');
+                    if (el) {
+                        var data = JSON.parse(el.textContent);
+                        if (Array.isArray(data)) return data;
+                    }
+                } catch (err) { /* fall through to a plain export */ }
+                try {
+                    return WeblinksBookmarks.parseFileText(text, FILE_NAME).tree;
+                } catch (err) {
+                    return [];
+                }
+            }
+
+            function statsFor(tree) {
+                var counts = WeblinksBookmarks.countTree(tree);
+                return { folders: counts.folders, links: counts.links, name: FILE_NAME, saved: true };
+            }
+
+            function buildComparableHTML(tree, remoteText) {
+                var text = String(remoteText || '');
+                var id = (text.match(/EXPORT_ID = '([^']+)'/) || [])[1];
+                var ts = Number((text.match(/BUILT_AT = (\d+)/) || [])[1]) || 0;
+                return WeblinksBookmarks.buildStandaloneHTML(tree, id || undefined, ts || undefined);
+            }
+
+            async function syncWithFolder(dir, tree, updatedAt) {
+                var localTree = Array.isArray(tree) ? tree : [];
+                var remote = await readRemote(dir);
+                var localHtml = localTree.length ? buildComparableHTML(localTree, remote && remote.text) : '';
+
+                if (!remote) {
+                    if (!localTree.length) return { ok: true, message: 'No bookmarks to sync yet.' };
+                    await writeRemote(dir, localHtml);
+                    return { ok: true, message: 'Saved bookmarks.html to \u201c' + dir.name + '\u201d.' };
+                }
+
+                var remoteTree = treeFromSyncedText(remote.text);
+
+                if (!localTree.length) {
+                    if (!remoteTree.length) return { ok: true, message: 'No bookmarks to sync yet.' };
+                    WeblinksBookmarks.saveTree(remoteTree, FILE_NAME);
+                    WeblinksBookmarks.postToLeftFrame(remoteTree, statsFor(remoteTree));
+                    var normalized = buildComparableHTML(remoteTree, remote.text);
+                    if (remote.text !== normalized) {
+                        try { await writeRemote(dir, normalized); } catch (err) { /* keep the local copy */ }
+                    }
+                    return { ok: true, message: 'Loaded bookmarks from \u201c' + dir.name + '\u201d.' };
+                }
+
+                var remoteTs = remote.file.lastModified || 0;
+                if (remote.text === localHtml) {
+                    return { ok: true, message: 'Already in sync with \u201c' + dir.name + '\u201d.' };
+                }
+                if (remoteTs > updatedAt + 1000) {
+                    if (remoteTree.length) {
+                        WeblinksBookmarks.saveTree(remoteTree, FILE_NAME);
+                        WeblinksBookmarks.postToLeftFrame(remoteTree, statsFor(remoteTree));
+                        return { ok: true, message: 'Updated from \u201c' + dir.name + '\u201d (that copy was newer).' };
+                    }
+                    await writeRemote(dir, localHtml);
+                    return { ok: true, message: 'Saved bookmarks.html to \u201c' + dir.name + '\u201d.' };
+                }
+
+                await writeRemote(dir, localHtml);
+                return { ok: true, message: 'Saved bookmarks.html to \u201c' + dir.name + '\u201d.' };
+            }
+
+            async function autoExport(tree, updatedAt) {
+                if (!tree || !tree.length) return;
+                if (!savedHandle) {
+                    try { savedHandle = await dbGet(); } catch (err) { return; }
+                }
+                if (!savedHandle) return;
+                var perm = await queryPermission(savedHandle);
+                if (perm !== 'granted') return;
+                try {
+                    var remote = await readRemote(savedHandle);
+                    if (remote) {
+                        if ((remote.file.lastModified || 0) > updatedAt + 1000) return;
+                        if (remote.text === buildComparableHTML(tree, remote.text)) return;
+                    }
+                    await writeRemote(savedHandle, buildComparableHTML(tree, remote && remote.text));
+                    showSyncToast('Saved bookmarks.html to \u201c' + savedHandle.name + '\u201d.');
+                } catch (err) { /* background writes stay quiet */ }
+            }
+
+            function scheduleAutoExport(tree, updatedAt) {
+                clearTimeout(autoTimer);
+                autoTimer = setTimeout(function () { autoExport(tree, updatedAt); }, 600);
+            }
+
+            async function handleSyncRequest(tree, updatedAt) {
+                var localTree = Array.isArray(tree) ? tree : [];
+                var handle = savedHandle;
+                if (!handle) {
+                    try { handle = await dbGet(); } catch (err) { handle = null; }
+                }
+                savedHandle = handle;
+
+                if (!localTree.length) {
+                    if (!handle) { openSyncModal('setup'); return; }
+                    var perm = await queryPermission(handle);
+                    if (perm !== 'granted') { openSyncModal('reconnect'); return; }
+                    var remote = await readRemote(handle).catch(function () { return null; });
+                    if (remote && treeFromSyncedText(remote.text).length) {
+                        var pulled = await syncWithFolder(handle, [], updatedAt).catch(function (err) {
+                            return { ok: false, message: 'Could not sync: ' + ((err && err.message) || err) };
+                        });
+                        sendSyncResult(pulled.message, pulled.ok);
+                        return;
+                    }
+                    openSyncModal('setup');
+                    return;
+                }
+
+                if (!handle) {
+                    openSyncModal('setup');
+                    return;
+                }
+                var perm2 = await queryPermission(handle);
+                if (perm2 !== 'granted') { openSyncModal('reconnect'); return; }
+                var result = await syncWithFolder(handle, localTree, updatedAt).catch(function (err) {
+                    return { ok: false, message: 'Could not sync: ' + ((err && err.message) || err) };
+                });
+                sendSyncResult(result.message, result.ok);
+            }
+
+            async function connectFolder(dir) {
+                var perm = 'granted';
+                try { perm = await dir.queryPermission({ mode: 'readwrite' }); } catch (err) { /* ask below */ }
+                if (perm !== 'granted') {
+                    try { perm = await dir.requestPermission({ mode: 'readwrite' }); } catch (err) { perm = 'denied'; }
+                }
+                if (perm !== 'granted') {
+                    setStatus('Folder access was not granted.', true);
+                    return;
+                }
+
+                savedHandle = dir;
+                try { await dbSet(dir); } catch (err) { /* the folder still works this session */ }
+                writeConfig(FOLDER_KEY, dir.name);
+                writeConfig(PROVIDER_KEY, selectedProvider);
+                pathInput.value = dir.name;
+                chooseBtn.textContent = 'Choose different folder\u2026';
+
+                var tree = WeblinksBookmarks.loadTree();
+                var updatedAt = 0;
+                try { updatedAt = Number(localStorage.getItem(WeblinksBookmarks.UPDATED_KEY)) || 0; } catch (err) {}
+
+                var result = await syncWithFolder(dir, tree, updatedAt).catch(function (err) {
+                    return { ok: false, message: 'Could not sync that folder: ' + ((err && err.message) || err) };
+                });
+
+                pendingReply = false;
+                sendSyncResult(result.message, result.ok);
+                if (result.ok) {
+                    closeSyncModal();
+                    showSyncToast(result.message);
+                } else {
+                    setStatus(result.message, true);
+                }
+            }
+
+            async function chooseFolder() {
+                if (!('showDirectoryPicker' in window)) return;
+                setStatus('Waiting for the folder picker\u2026');
+                try {
+                    var dir = null;
+                    if (modalMode === 'reconnect' && savedHandle) {
+                        var perm = await savedHandle.requestPermission({ mode: 'readwrite' });
+                        if (perm === 'granted') dir = savedHandle;
+                    }
+                    if (!dir) {
+                        dir = await window.showDirectoryPicker({ id: 'weblinks-sync', mode: 'readwrite', startIn: 'documents' });
+                    }
+                    await connectFolder(dir);
+                } catch (err) {
+                    if (err && err.name === 'AbortError') {
+                        setStatus('');
+                        return;
+                    }
+                    setStatus('Could not access that folder: ' + ((err && err.message) || err), true);
+                }
+            }
+
+            for (var i = 0; i < providers.length; i++) {
+                providers[i].addEventListener('click', function () { selectProvider(this); });
+            }
+            chooseBtn.addEventListener('click', chooseFolder);
+            document.getElementById('sync-close').addEventListener('click', closeSyncModal);
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) closeSyncModal();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && overlay.classList.contains('open')) closeSyncModal();
+            });
+
+            window.addEventListener('message', function (e) {
+                var data = e.data;
+                if (!data || typeof data !== 'object') return;
+                if (data.type === 'weblinks:sync-request') {
+                    handleSyncRequest(data.tree, Number(data.updatedAt) || 0);
+                    return;
+                }
+                if (data.type === 'weblinks:auto-export' && Array.isArray(data.tree)) {
+                    scheduleAutoExport(data.tree, Number(data.updatedAt) || Date.now());
+                }
+            });
+
+            window.WeblinksSync = {
+                noteImport: function (tree) {
+                    var updatedAt = Date.now();
+                    try { updatedAt = Number(localStorage.getItem(WeblinksBookmarks.UPDATED_KEY)) || updatedAt; } catch (err) { /* ignore */ }
+                    scheduleAutoExport(tree, updatedAt);
+                }
+            };
+        })();
     </script>

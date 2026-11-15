@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <link rel="SHORTCUT ICON" href="favicon.png" />
     <title>Preview</title>
+    <script src="bookmarks.js?v=3"></script>
     <style>
                 .arrow {
                     display: inline-block;
@@ -29,6 +30,21 @@
                 box-shadow: 0 0 8px #aaa;
                 z-index: 10;
             }
+            .manager-link {
+                color: #3366cc;
+                text-decoration: underline;
+                cursor: pointer;
+            }
+            .manager-link:hover { color: #264d99; }
+            .manager-link-status {
+                display: block;
+                margin-top: 4px;
+                font-size: 12px;
+                color: #777;
+            }
+            body.dark-mode .manager-link { color: #8ab4f8; }
+            body.dark-mode .manager-link:hover { color: #b5cefb; }
+            body.dark-mode .manager-link-status { color: #999; }
         body { margin: 0; font-family: Arial, sans-serif; background: #fff; }
         .preview-placeholder {
             padding: 2em;
@@ -38,13 +54,17 @@
     </style>
 </head>
 <body>
-    <div id="dark-mode-toggle" class="toggle-switch"></div>
+    <div id="dark-mode-toggle" class="toggle-switch" role="switch" aria-checked="false" aria-label="Dark mode" tabindex="0">
+        <svg class="mode-icon sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="currentColor"/><g stroke="currentColor" stroke-width="1.1" stroke-linecap="round"><path d="M8 1.4v1.4M8 13.2v1.4M1.4 8h1.4M13.2 8h1.4M3.1 3.1l1 1M11.9 11.9l1 1M12.9 3.1l-1 1M4.1 11.9l-1 1"/></g></svg>
+        <svg class="mode-icon moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.4 9.7A5.7 5.7 0 0 1 6.3 2.6a5.8 5.8 0 1 0 7.1 7.1z" fill="currentColor"/></svg>
+    </div>
     <!--<a href="help.html" class="help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>-->
+    <a href="https://github.com/bumpper/WebLinks-TreeView" target="_blank" rel="noopener" class="help-btn" title="Help Documentation" aria-label="Help Documentation">?</a>
     <style>
         .toggle-switch {
             position: absolute;
             top: 20px;
-            right: 20px;    /* Change to right: 90px; if you unhide the ? Help button above. */
+            right: 90px;
             display: inline-block;
             width: 50px;
             height: 25px;
@@ -62,6 +82,7 @@
             background-color: #fff;
             border-radius: 50%;
             transition: transform 0.5s;
+            z-index: 1;
         }
         .toggle-switch.active {
             background-color: #5555ff;
@@ -69,13 +90,47 @@
         .toggle-switch.active::before {
             transform: translateX(25px);
         }
+        .toggle-switch .mode-icon {
+            position: absolute;
+            top: 50%;
+            z-index: 0;
+            width: 12px;
+            height: 12px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        .toggle-switch .sun { right: 6px; color: #ffd75e; }
+        .toggle-switch .moon { left: 6px; color: #ffffff; }
+        .toggle-switch:focus-visible { outline: 2px solid #5555ff; outline-offset: 2px; }
+        .primary-btn {
+            padding: 6px 14px;
+            border: 1px solid #0078d4;
+            border-radius: 4px;
+            background: #0078d4;
+            color: #ffffff;
+            font: 13px "Segoe UI", Tahoma, Arial, sans-serif;
+            cursor: pointer;
+        }
+        .primary-btn:hover { filter: brightness(1.08); }
+        .primary-btn:focus-visible { outline: 2px solid #0078d4; outline-offset: 2px; }
+        #bookmark-filename {
+            margin-left: 8px;
+            color: #888;
+            font-size: 12px;
+        }
+        body.dark-mode #bookmark-filename { color: #aaa; }
         .help-btn {
             position: absolute;
             top: 20px;
             right: 20px;
-            padding: 10px 20px;
+            height: 25px;
+            box-sizing: border-box;
+            padding: 0 14px;
             margin: 0;
-            font-size: 16px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background-color: #f0f0f0;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -83,7 +138,6 @@
             text-decoration: none;
             color: #333;
             transition: background-color 0.3s;
-            display: inline-block;
         }
         .help-btn:hover {
             background-color: #e0e0e0;
@@ -105,18 +159,49 @@
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const body = document.body;
 
+        function applyToggleState(dark) {
+            body.classList.toggle('dark-mode', dark);
+            darkModeToggle.classList.toggle('active', dark);
+            darkModeToggle.setAttribute('aria-checked', dark ? 'true' : 'false');
+        }
+
+        function broadcastMode() {
+            const dark = body.classList.contains('dark-mode');
+            try {
+                if (window.top && window.top.frames && window.top.frames['leftFrame']) {
+                    window.top.frames['leftFrame'].postMessage({ type: 'weblinks:dark-mode', dark: dark }, '*');
+                }
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'weblinks:dark-mode', dark: dark }, '*');
+                }
+            } catch (err) { /* ignore */ }
+        }
+
         darkModeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            darkModeToggle.classList.toggle('active');
-            // Always set localStorage to 'true' or 'false' as a string
-            localStorage.setItem('darkMode', body.classList.contains('dark-mode') ? 'true' : 'false');
+            applyToggleState(!body.classList.contains('dark-mode'));
+            const dark = body.classList.contains('dark-mode');
+            try {
+                localStorage.setItem('darkMode', dark ? 'true' : 'false');
+            } catch (err) { /* ignore */ }
+            // Keep the tree panel and the split-view chrome in sync immediately.
+            broadcastMode();
+        });
+
+        darkModeToggle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                darkModeToggle.click();
+            }
         });
 
         // Apply saved dark mode preference on page load
         if (localStorage.getItem('darkMode') === 'true') {
-            body.classList.add('dark-mode');
-            darkModeToggle.classList.add('active');
+            applyToggleState(true);
         }
+
+        // Announce the restored mode once loading finishes; the frame that
+        // starts first may have missed the other side's initial state.
+        window.addEventListener('load', broadcastMode);
     </script>
     <div class="preview-placeholder">
         <h2></h2>
@@ -124,8 +209,12 @@
         <div id="upload-section" style="margin-top:2em;">
         <!--<div id="upload-section" style="height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;">-->
             <div id="drop-zone" style="margin-top:1em;padding:1.5em 1em;border:2px dashed #888;border-radius:8px;color:#888;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box;">
-                <p><label for="bookmark-upload" style="font-weight:bold;margin-bottom:0.5em;">Upload Bookmarks (.html, or .htm)</label></p>
-                <p><input type="file" id="bookmark-upload" accept=".html,.htm" style="margin-bottom:0.5em;"></p>
+                <p><label for="bookmark-upload" style="font-weight:bold;margin-bottom:0.5em;">Upload Bookmarks (.html, .htm, or .json)</label></p>
+                <p style="margin:0.25em 0 0.5em;">
+                    <input type="file" id="bookmark-upload" accept=".html,.htm,.json" hidden>
+                    <button type="button" id="bookmark-choose" class="primary-btn">Choose File</button>
+                    <span id="bookmark-filename">No file chosen</span>
+                </p>
                 <p><span style="color:#888;">Or drag and drop the file here.</span></p>
             </div>
             <div id="upload-message" style="margin-top:1em;color:#555;"></div>
@@ -141,7 +230,7 @@
                             <ol style="margin:0 0 0 16px;">
                                 </p><li>Open the Brave browser.</li>
                                 <li>Click the Hamburger menu (three-lines) in the top-right corner.</li>
-                                <li>Then select <b>Bookmarks</b> &gt; <b>Bookmark manager</b>.</li>
+                                <li>Then select <b>Bookmarks</b> &gt; <a href="#" class="manager-link" data-browser="Brave">Bookmark manager</a>.</li>
                                 <img src="img/brave-1.jpg" alt="Click the Hamburger menu (three-lines) in the top-right corner.  Then select Bookmarks &gt; Bookmark manager." class="export-img"></p>
                                 <li>Click the three-dot menu in the Bookmark manager.</li>
                                 <img src="img/brave-2.jpg" alt="Click the Breadcrumb menu (three-dots) in the Bookmark manager." class="export-img"></p>
@@ -160,7 +249,7 @@
                             <ol style="margin:0 0 0 16px;">
                                 </p><li>Open the Chrome browser.</li>
                                 <li>Click the Breadcrumb menu (three-dots) in the top-right corner.</li>
-                                <li>Select <b>Bookmarks</b> &gt; <b>Bookmark manager</b>.</li>
+                                <li>Select <b>Bookmarks</b> &gt; <a href="#" class="manager-link" data-browser="Chrome">Bookmark manager</a>.</li>
                                 <img src="img/chrome-1.jpg" alt="Click the Breadcrumb menu (three-dots) in the top-right corner.  Then select Bookmarks &gt; Bookmark manager." class="export-img"></p>
                                 <li>Click the Breadcrumb menu (three-dots) in the Bookmark manager.</li>
                                 <img src="img/chrome-2.jpg" alt="Click the three-dot menu in the Bookmark manager." class="export-img"></p>
@@ -179,7 +268,7 @@
                             <ol style="margin:0 0 0 16px;">
                                 </p><li>Open the Microsoft Edge browser.</li>
                                 <li>Click the Breadcrumb menu (three-dots) in the top-right corner.</li>
-                                <li>Select <b>Favorites</b></li>
+                                <li>Select <a href="#" class="manager-link" data-browser="Edge">Favorites</a></li>
                                 <img src="img/edge-1.jpg" alt="Click the three-dot menu in the top-right corner.  Then select Favorites." class="export-img"></p>
                                 <li>Click the <b>three-dot</b> menu in the Favorites menu &gt; <b>Export Favorites</b> and Save as an HTML file.</li>
                                 <img src="img/edge-2.jpg" alt="Click the three-dot menu in the Favorites menu and Save as an HTML file." class="export-img"></p>
@@ -197,7 +286,7 @@
                                 </p><li>Open the Firefox browser.</li>
                                 <li>Click the <b>Hamburger menu</b> (three-lines) &gt; <b>Bookmarks</b></li>
                                 <img src="img/firefox-1.jpg" alt="Hamburger menu (three-lines) &gt; Bookmarks" class="export-img"></p>
-                                <li>Select <b>Manage Bookmarks</b></li>
+                                <li>Select <a href="#" class="manager-link" data-browser="Firefox">Manage Bookmarks</a></li>
                                 <img src="img/firefox-2.jpg" alt="Select Manage Bookmarks" class="export-img"></p>
                                 <li>Select <b>Import & Backup</b> &gt; <b>Export Bookmarks to HTML</b>.</li>
                                 <img src="img/firefox-3.jpg" alt="Select Import & Backup &gt; Export Bookmarks to HTML." class="export-img"></p>
@@ -213,7 +302,7 @@
                         <div class="browser-help-content" style="display:none;padding-left:16px;">
                             <ol style="margin:0 0 0 16px;">
                                 </p><li>Open the Opera browser.</li>
-                                <li>Click the <b>Opera</b> button in the top Left corner &gt; <b>Bookmarks</b> &gt; <b>Manage Bookmarks...</b></li>
+                                <li>Click the <b>Opera</b> button in the top Left corner &gt; <b>Bookmarks</b> &gt; <a href="#" class="manager-link" data-browser="Opera">Manage Bookmarks...</a></li>
                                 <img src="img/opera-1.jpg" alt="Click the Opera button in the top Left corner &gt; Bookmarks &gt; Manage Bookmarks..." class="export-img"></p>
                                 <li>Click <b>File</b> &gt; <b>Export As HTML...</b> button.</li>
                                 <img src="img/opera-2.jpg" alt="Click File &gt; Export As HTML..." class="export-img"></p>
@@ -231,7 +320,7 @@
                         <div class="browser-help-content" style="display:none;padding-left:16px;">
                             <ol style="margin:0 0 0 16px;">
                                 </p><li>Open the Safari browser.</li>
-                                <li>In the menu bar, click <b>File</b> &gt; <b>Export Bookmarks...</b></li>
+                                <li>In the menu bar, click <b>File</b> &gt; <a href="#" class="manager-link" data-browser="Safari">Export Bookmarks...</a></li>
                                 <img src="img/safari-1.jpg" alt="In the menu bar, click File &gt; Export Bookmarks..." class="export-img"></p>
                                 <li>Choose a location and Save as an HTML file.</li>
                             </ol>
@@ -246,78 +335,129 @@
         const dropZone = document.getElementById('drop-zone');
         const uploadMessage = document.getElementById('upload-message');
 
+        function escapeHtml(value) {
+            return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+            });
+        }
+
+        function currentDisplayedTree() {
+            try {
+                if (window.top && window.top.frames && window.top.frames['leftFrame']) {
+                    const left = window.top.frames['leftFrame'];
+                    if (left.WeblinksTree && typeof left.WeblinksTree.getTree === 'function') {
+                        const tree = left.WeblinksTree.getTree();
+                        if (tree && tree.length) return tree;
+                    }
+                }
+            } catch (err) { /* cross-origin */ }
+            return WeblinksBookmarks.loadTree();
+        }
+
+        function downloadBookmarksFile() {
+            const tree = currentDisplayedTree();
+            if (!tree.length) {
+                uploadMessage.textContent = 'No bookmarks are available to download yet.';
+                return false;
+            }
+            const html = WeblinksBookmarks.buildStandaloneHTML(tree);
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bookmarks.html';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+            return true;
+        }
+
+        function downloadBookmarksJSON() {
+            const tree = currentDisplayedTree();
+            if (!tree.length) {
+                uploadMessage.textContent = 'No bookmarks are available to download yet.';
+                return false;
+            }
+            const json = JSON.stringify(WeblinksBookmarks.buildFirefoxJSON(tree), null, 2);
+            const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bookmarks.json';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+            return true;
+        }
+
+        function showImported(result, fileName, saved) {
+            uploadMessage.innerHTML =
+                'Imported <b>' + result.folders.toLocaleString() + '</b> folders and <b>' +
+                result.links.toLocaleString() + '</b> links from &ldquo;' + escapeHtml(fileName) + '&rdquo;.<br>' +
+                (saved ? 'The tree is in the left panel.' : '<span style="color:#b00;">Browser storage is full, so the tree will not persist after a reload.</span>') +
+                '<br><a id="download-bookmarks" href="#" style="color:#3366cc;text-decoration:underline;">Download bookmarks.html</a>' +
+                '<br><a id="download-bookmarks-json" href="#" style="color:#3366cc;text-decoration:underline;">Download bookmarks.json</a>';
+
+            document.getElementById('download-bookmarks').addEventListener('click', function (event) {
+                event.preventDefault();
+                downloadBookmarksFile();
+            });
+
+            document.getElementById('download-bookmarks-json').addEventListener('click', function (event) {
+                event.preventDefault();
+                downloadBookmarksJSON();
+            });
+        }
+
         function handleFile(file) {
             const allowed = ['json', 'html', 'htm'];
-            const ext = file.name.split('.').pop().toLowerCase();
+            const ext = file.name.indexOf('.') >= 0 ? file.name.split('.').pop().toLowerCase() : '';
             if (!allowed.includes(ext)) {
-                uploadMessage.textContent = 'Invalid file type. Only .html, or .htm allowed.';
+                uploadMessage.textContent = 'Invalid file type. Only .html, .htm, or .json allowed.';
                 return;
             }
+            uploadMessage.textContent = 'Reading ' + file.name + '\u2026';
             const reader = new FileReader();
             reader.onload = function(e) {
-                localStorage.setItem('uploadedBookmarks', e.target.result);
-                localStorage.setItem('uploadedBookmarksType', ext);
-                uploadMessage.innerHTML = 'Bookmarks uploaded!</p><a id="download-weblinks" href="#" style="color:#3366cc;text-decoration:underline;">Download your Weblinks</a><br>(to upload to your own Web Server or Cloud Storage.)';
-
-                document.getElementById('download-weblinks').onclick = async function(e) {
-                    e.preventDefault();
-                    // Dynamically load JSZip from CDN if not present
-                    if (typeof JSZip === 'undefined') {
-                        const script = document.createElement('script');
-                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-                        script.onload = makeZip;
-                        document.body.appendChild(script);
-                    } else {
-                        makeZip();
-                    }
-                    async function makeZip() {
-                        const zip = new JSZip();
-                        // Helper to fetch and add a file
-                        async function addFile(path, name) {
-                            const res = await fetch(path);
-                            if (!res.ok) return;
-                            const blob = await res.blob();
-                            zip.file(name, blob);
-                        }
-                        // Add main files
-                        await addFile('treeview.html', 'treeview.html');
-                        await addFile('preview.html', 'preview.html');
-                        await addFile('index.html', 'index.html');
-                        await addFile('weblinks.html', 'weblinks.html');
-                        await addFile('LICENSE', 'LICENSE');
-                        await addFile('README.md', 'README.md');
-                        await addFile('favicon.png', 'favicon.png');
-                        await addFile('DEMO.html', 'DEMO.html');
-                        // Add img folder files
-                        const imgFiles = [
-                            'img/chrome-3.jpg','img/edge-1.jpg','img/chrome-2.jpg','img/chrome-1.jpg','img/brave-3.jpg','img/brave-2.jpg','img/brave-1.jpg','img/safari-1.jpg','img/firefox-3.jpg','img/opera-1.jpg','img/firefox-2.jpg','img/opera-2.jpg','img/edge-2.jpg','img/firefox-1.jpg'
-                        ];
-                        for (const img of imgFiles) {
-                            await addFile(img, img);
-                        }
-                        // Generate and download zip
-                        zip.generateAsync({type:'blob'}).then(function(content) {
-                            const a = document.createElement('a');
-                            a.href = URL.createObjectURL(content);
-                            a.download = 'weblinks.zip';
-                            a.style.display = 'none';
-                            document.body.appendChild(a);
-                            a.click();
-                            setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
-                            setTimeout(()=>a.remove(), 5000);
-                        });
-                    }
-                };
-                // Optionally, trigger treeview update via storage event
-                localStorage.setItem('bookmarksUpdated', Date.now().toString());
+                let result;
+                try {
+                    result = WeblinksBookmarks.parseFileText(e.target.result, file.name);
+                } catch (err) {
+                    uploadMessage.textContent = 'Could not parse ' + file.name + '.';
+                    return;
+                }
+                if (!result.tree.length) {
+                    uploadMessage.textContent = 'No bookmarks were found in ' + file.name + '.';
+                    return;
+                }
+                const saved = WeblinksBookmarks.saveTree(result.tree, file.name);
+                WeblinksBookmarks.postToLeftFrame(result.tree, {
+                    folders: result.folders,
+                    links: result.links,
+                    name: file.name,
+                    saved: saved.ok
+                });
+                showImported(result, file.name, saved.ok);
+            };
+            reader.onerror = function() {
+                uploadMessage.textContent = 'Could not read ' + file.name + '.';
             };
             reader.readAsText(file);
         }
 
+        document.getElementById('bookmark-choose').addEventListener('click', function() {
+            uploadInput.click();
+        });
+
         uploadInput.addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
-                handleFile(e.target.files[0]);
+            const file = e.target.files && e.target.files[0];
+            document.getElementById('bookmark-filename').textContent = file ? file.name : 'No file chosen';
+            if (file) {
+                handleFile(file);
             }
+            uploadInput.value = '';
         });
 
         dropZone.addEventListener('dragover', function(e) {
@@ -330,6 +470,61 @@
         dropZone.addEventListener('drop', function(e) {
             e.preventDefault();
             dropZone.style.background = '';
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // The tree panel returns import statistics when a file is dropped there.
+        window.addEventListener('message', function(e) {
+            const data = e.data;
+            if (data && data.type === 'weblinks:tree-updated' && data.stats) {
+                showImported(data.stats, data.stats.name || 'bookmarks', data.stats.saved !== false);
+                return;
+            }
+            if (data && data.type === 'weblinks:request-tree') {
+                const stored = WeblinksBookmarks.loadTree();
+                if (stored.length) {
+                    const stats = WeblinksBookmarks.countTree(stored);
+                    WeblinksBookmarks.postToLeftFrame(stored, {
+                        folders: stats.folders,
+                        links: stats.links,
+                        name: WeblinksBookmarks.getSourceName() || 'bookmarks'
+                    });
+                }
+                return;
+            }
+            if (data && data.type === 'weblinks:clear-tree') {
+                WeblinksBookmarks.clearTree();
+                uploadMessage.innerHTML = '';
+                document.getElementById('bookmark-filename').textContent = 'No file chosen';
+            }
+        });
+
+        function reportRightLocation() {
+            try {
+                window.parent.postMessage({
+                    type: 'weblinks:right-location',
+                    href: window.location.href,
+                    title: document.title || ''
+                }, '*');
+            } catch (err) { /* ignore */ }
+        }
+        reportRightLocation();
+        window.addEventListener('hashchange', reportRightLocation);
+
+        // Allow dropping a bookmarks file anywhere on this page, not just on the box.
+        function dragHasFiles(e) {
+            return !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1);
+        }
+        window.addEventListener('dragover', function(e) {
+            if (!dragHasFiles(e)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+        window.addEventListener('drop', function(e) {
+            if (!dragHasFiles(e) || e.defaultPrevented) return;
+            e.preventDefault();
             if (e.dataTransfer.files.length > 0) {
                 handleFile(e.dataTransfer.files[0]);
             }
@@ -373,6 +568,150 @@
             arrowDown.addEventListener('click', toggle);
             title.addEventListener('click', toggle);
         });
+
+        // Detect the browser being used so its export steps start expanded.
+        function detectBrowserName(ua) {
+            if (!ua && navigator.brave) return 'Brave';
+            ua = ua || navigator.userAgent || '';
+            if (/\bBrave\//.test(ua)) return 'Brave';
+            if (/\bEdg(?:e|A|iOS)?\//.test(ua)) return 'Edge';
+            if (/\bOPR\/|\bOPiOS\//.test(ua)) return 'Opera';
+            if (/\bFirefox\/|\bFxiOS\//.test(ua)) return 'Firefox';
+            if (/\bChrome\/|\bCriOS\//.test(ua)) return 'Chrome';
+            if (/\bSafari\//.test(ua)) return 'Safari';
+            return '';
+        }
+
+        (function expandDetectedBrowser() {
+            const name = detectBrowserName();
+            if (!name) return;
+            const item = document.querySelector('.browser-help-item[data-browser="' + name + '"]');
+            if (!item) return;
+            const content = item.nextElementSibling;
+            if (!content) return;
+            content.style.display = 'block';
+            item.querySelector('.arrow-up').style.display = 'none';
+            item.querySelector('.arrow-down').style.display = '';
+        })();
+
+        // Step links that open each browser's Bookmark Manager. Pages cannot open
+        // privileged chrome:// pages, so when the browser refuses, the address (or
+        // the OS-specific Firefox shortcut) is copied and shown inline instead.
+        const BOOKMARK_MANAGER_URLS = {
+            Brave: 'brave://bookmarks/',
+            Chrome: 'chrome://bookmarks/',
+            Edge: 'edge://favorites/',
+            Opera: 'opera://bookmarks/'
+        };
+
+        const BOOKMARK_MANAGER_SHORTCUTS = {
+            Brave: { windows: 'Ctrl+Shift+O', mac: 'Cmd+Option+B' },
+            Chrome: { windows: 'Ctrl+Shift+O', mac: 'Cmd+Option+B' },
+            Edge: { windows: 'Ctrl+Shift+O', mac: 'Cmd+Option+B' },
+            Opera: { windows: 'Ctrl+Shift+B' },
+            Safari: { mac: 'Option+Command+B' }
+        };
+
+        function detectOS() {
+            const platform = (navigator.userAgentData && navigator.userAgentData.platform) ||
+                navigator.platform || '';
+            if (/mac/i.test(platform) || /Macintosh/i.test(navigator.userAgent || '')) return 'mac';
+            if (/win/i.test(platform) || /Windows/i.test(navigator.userAgent || '')) return 'windows';
+            return 'other';
+        }
+
+        function firefoxLibraryShortcut() {
+            return detectOS() === 'mac' ? 'Cmd+Shift+O' : 'Ctrl+Shift+O';
+        }
+
+        function managerShortcut(browserName) {
+            const entry = BOOKMARK_MANAGER_SHORTCUTS[browserName];
+            if (!entry) return '';
+            if (browserName === 'Safari') return entry.mac || '';
+            return detectOS() === 'mac' ? (entry.mac || '') : (entry.windows || '');
+        }
+
+        function legacyCopy(text) {
+            const helper = document.createElement('textarea');
+            helper.value = text;
+            helper.style.position = 'fixed';
+            helper.style.opacity = '0';
+            document.body.appendChild(helper);
+            helper.select();
+            try { document.execCommand('copy'); } catch (err) { /* ignore */ }
+            helper.remove();
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function () { legacyCopy(text); });
+                return;
+            }
+            legacyCopy(text);
+        }
+
+        function setManagerStatus(link, text) {
+            let status = link.parentNode.querySelector('.manager-link-status');
+            if (!status) {
+                status = document.createElement('span');
+                status.className = 'manager-link-status';
+                status.setAttribute('role', 'status');
+                link.parentNode.appendChild(status);
+            }
+            status.innerHTML = text;
+        }
+
+        function openBookmarkManager(link) {
+            const browserName = link.getAttribute('data-browser');
+            const managerUrl = browserName === 'Firefox'
+                ? 'chrome://browser/content/places/places.xhtml'
+                : BOOKMARK_MANAGER_URLS[browserName];
+            const shortcut = browserName === 'Firefox' ? firefoxLibraryShortcut() : managerShortcut(browserName);
+
+            if (!managerUrl) {
+                setManagerStatus(link, 'Safari does not have a bookmark-manager address. Press <b>' +
+                    shortcut + '</b> to open the bookmarks editor.');
+                return;
+            }
+
+            let opened = null;
+            try { opened = window.open(managerUrl, '_blank'); } catch (err) { opened = null; }
+            if (opened) {
+                let text = 'Opened the ' + browserName + ' Bookmark Manager in a new tab.';
+                if (shortcut) {
+                    text += ' You can also press <b>' + shortcut + '</b> to open it.';
+                }
+                setManagerStatus(link, text);
+                return;
+            }
+            copyText(managerUrl);
+            if (browserName === 'Firefox') {
+                setManagerStatus(link, 'Firefox does not let a page open the Library. Press <b>' +
+                    shortcut + '</b>, or paste the copied address into the address bar.');
+            } else if (shortcut) {
+                setManagerStatus(link, 'The browser blocked the page from opening it. The manager address was copied \u2014 press <b>' +
+                    shortcut + '</b>, or paste the copied address into the address bar.');
+            } else {
+                setManagerStatus(link, 'The browser blocked the page from opening it. The manager address was copied \u2014 paste it into the address bar.');
+            }
+        }
+
+        document.querySelectorAll('.manager-link').forEach(function(link) {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                openBookmarkManager(link);
+            });
+        });
+
+        // When opened from the tree header (or reloaded), show the current import
+        // summary and the download link for the standalone bookmarks.html file.
+        (function restoreImportedSummary() {
+            const tree = currentDisplayedTree();
+            if (!tree.length) return;
+            const stats = WeblinksBookmarks.countTree(tree);
+            const stored = WeblinksBookmarks.loadTree();
+            showImported(stats, WeblinksBookmarks.getSourceName() || 'your bookmarks', stored.length > 0);
+        })();
     </script>
 </body>
-</htm
+</html>

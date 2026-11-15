@@ -2,308 +2,1802 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="SHORTCUT ICON" href="favicon.png" />
-    <title>TreeView - CHM Style</title>
+    <title>Bookmarks</title>
     <style>
+        :root {
+            --bg: #ffffff;
+            --fg: #1f1f1f;
+            --muted: #616161;
+            --line: #e0e0e0;
+            --guide: #dedede;
+            --hover: #f2f6fb;
+            --sel: #cce8ff;
+            --hdr: #f7f7f7;
+            --btn-hover: #e8e8e8;
+            --chev: #555555;
+            --accent: #0078d4;
+            --warn: #c42b1c;
+            --overlay: rgba(255, 255, 255, 0.86);
+            --scroll: #c7c7c7;
+        }
+        body.dark-mode {
+            --bg: #1f1f1f;
+            --fg: #e8e8e8;
+            --muted: #a5a5a5;
+            --line: #3a3a3a;
+            --guide: #3d3d3d;
+            --hover: #2b2b2b;
+            --sel: #264f78;
+            --hdr: #252526;
+            --btn-hover: #373737;
+            --chev: #c2c2c2;
+            --accent: #4aa3e0;
+            --warn: #f1707b;
+            --overlay: rgba(31, 31, 31, 0.86);
+            --scroll: #565656;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
         body {
             margin: 0;
-            font-family: Tahoma, Arial, sans-serif;
-            background: #f3f3f3;
-            color: #222;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--fg);
+            font: 13px/1.35 "Segoe UI", Tahoma, Arial, sans-serif;
         }
-        .treeview {
-            padding: 0.5em 0.5em 0.5em 0.2em;
-            box-sizing: border-box;
-            overflow-x: auto;
-            white-space: nowrap;
+        .pane-header {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 6px 6px 6px 10px;
+            background: var(--hdr);
+            border-bottom: 1px solid var(--line);
+            user-select: none;
         }
+        .pane-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        a.pane-title {
+            margin-left: -4px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        a.pane-title:hover { background: var(--btn-hover); }
+        a.pane-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+        .pane-title .star { flex: 0 0 auto; width: 16px; height: 16px; color: #f2b01e; }
+        .pane-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pane-tools { display: flex; flex: 0 0 auto; gap: 1px; }
+        .tool {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--fg);
+            cursor: pointer;
+        }
+        .tool:hover { background: var(--btn-hover); border-color: var(--line); }
+        #btn-clear:hover { color: #c42b1c; }
+        #btn-upload:hover { color: #0078d4; }
+        #btn-download:hover { color: #1e8e3e; }
+        #btn-sync:hover { color: #b8860b; }
+        #btn-expand:hover,
+        #btn-collapse:hover { color: #d97706; }
+        #btn-sidebar-toggle:hover { color: #7b3fe4; }
+        body.dark-mode #btn-clear:hover { color: #ff8b8b; }
+        body.dark-mode #btn-upload:hover { color: #6cb6ff; }
+        body.dark-mode #btn-download:hover { color: #6ed17f; }
+        body.dark-mode #btn-sync:hover { color: #ffd75e; }
+        body.dark-mode #btn-expand:hover,
+        body.dark-mode #btn-collapse:hover { color: #ffab5e; }
+        body.dark-mode #btn-sidebar-toggle:hover { color: #c39bff; }
+        .tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+        .tool svg { width: 15px; height: 15px; }
+        .tool.spinning svg { animation: tool-spin 0.7s linear infinite; }
+        @keyframes tool-spin { to { transform: rotate(360deg); } }
+        #btn-sidebar-toggle .icon-expand { display: none; }
+        body.sidebar-collapsed #btn-sidebar-toggle .icon-collapse { display: none; }
+        body.sidebar-collapsed #btn-sidebar-toggle .icon-expand { display: block; }
+        body.sidebar-collapsed {
+            background: var(--hdr);
+        }
+        body.sidebar-collapsed .pane-header {
+            justify-content: center;
+            padding: 4px 2px;
+            border-bottom: 0;
+        }
+        body.sidebar-collapsed .pane-title,
+        body.sidebar-collapsed #btn-clear,
+        body.sidebar-collapsed #btn-upload,
+        body.sidebar-collapsed #btn-download,
+        body.sidebar-collapsed #btn-sync,
+        body.sidebar-collapsed #btn-expand,
+        body.sidebar-collapsed #btn-collapse,
+        body.sidebar-collapsed .tree-wrap,
+        body.sidebar-collapsed .statusbar,
+        body.sidebar-collapsed .drop-overlay { display: none; }
+        .tree-wrap {
+            position: relative;
+            flex: 1 1 auto;
+            overflow: auto;
+            padding: 4px 0 8px;
+            outline: none;
+        }
+        .tree-wrap:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
         ul.tree {
-            list-style: none;
+            display: inline-block;
+            vertical-align: top;
+            width: max-content;
+            min-width: 100%;
             margin: 0;
             padding: 0;
+            list-style: none;
         }
-        .tree li {
-            line-height: 1.7em;
+        ul.children {
+            display: none;
+            margin: 0 0 0 7px;
+            padding: 0 0 0 10px;
+            border-left: 1px solid var(--guide);
+            list-style: none;
+        }
+        li.node.folder.expanded > ul.children { display: block; }
+        li.node { position: relative; }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 24px;
+            padding: 0 8px 0 2px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .row:hover { background: var(--hover); }
+        li.node.selected > .row { background: var(--sel); }
+        li.node.selected > .row .label { font-weight: 600; }
+        .twisty {
+            display: inline-flex;
+            flex: 0 0 16px;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+        }
+        .twisty::before {
+            content: "";
+            width: 0;
+            height: 0;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            border-left: 5px solid var(--chev);
+            transition: transform 0.12s ease;
+            transform-origin: 40% 50%;
+        }
+        li.node.folder.expanded > .row .twisty::before { transform: rotate(90deg); }
+        .twisty.leaf::before { display: none; }
+        .ico {
+            flex: 0 0 16px;
+            width: 16px;
+            height: 16px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 16px 16px;
+        }
+        .ico.folder-ico {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.5 3.6c0-.6.5-1.1 1.1-1.1h3.1c.4 0 .8.2 1 .5l1.1 1.5h5.6c.6 0 1.1.5 1.1 1.1v6.8c0 .6-.5 1.1-1.1 1.1H2.6c-.6 0-1.1-.5-1.1-1.1z' fill='%23f2b53d' stroke='%23c08a10' stroke-width='1'/%3E%3Cpath d='M2.6 6h10.8v6.4c0 .33-.27.6-.6.6H3.2a.6.6 0 0 1-.6-.6z' fill='%23ffd66b' stroke='%23c08a10' stroke-width='1'/%3E%3C/svg%3E");
+        }
+        li.node.folder.expanded > .row .ico.folder-ico {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.3 3.6c0-.6.5-1.1 1.1-1.1h3.1c.4 0 .8.2 1 .5l1.1 1.5h5.3c.6 0 1.1.5 1.1 1.1V6H6.2L4.9 7.3H1.3z' fill='%23e0a52f' stroke='%23c08a10' stroke-width='1'/%3E%3Cpath d='M5.6 6h9.5l-1.8 6.6c-.1.5-.5.8-1 .8H2.1c-.4 0-.7-.4-.6-.8z' fill='%23ffd66b' stroke='%23c08a10' stroke-width='1'/%3E%3C/svg%3E");
+        }
+        .ico.link-ico {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M12.7 8.6v4.1c0 .5-.4.9-.9.9H3.2c-.5 0-.9-.4-.9-.9V4.2c0-.5.4-.9.9-.9h4.1' fill='none' stroke='%234a90d9' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M9.3 2.3h4.4v4.4' fill='none' stroke='%234a90d9' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M13.7 2.3L7.6 8.4' fill='none' stroke='%234a90d9' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+        }
+        li.node.link .row .ico.link-ico,
+        li.node.link .row .label { cursor: pointer; }
+        .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tree-sep {
+            flex: 1 1 auto;
+            min-width: 40px;
+            margin: 0;
+            border: 0;
+            border-top: 1px solid var(--guide);
+        }
+        li.node.separator > .row,
+        li.node.separator > .row:hover,
+        li.node.separator.selected > .row { background: transparent; }
+        li.node.separator.selected > .row .tree-sep { border-top-color: var(--accent); }
+        li.node.separator .edit-btn {
+            position: absolute;
+            top: 3px;
+            right: 4px;
+        }
+        .add-row {
+            display: flex;
+            align-items: center;
+            height: 24px;
+            padding: 0 8px 0 20px;
+        }
+        .add-btn,
+        .edit-btn {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            border-radius: 3px;
+            background: transparent;
+            cursor: pointer;
+        }
+        .add-btn { width: 20px; height: 20px; color: #1e8e3e; }
+        .add-btn:hover { color: #146c2e; }
+        .add-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+        .add-btn svg { width: 16px; height: 16px; }
+        .edit-btn {
+            width: 18px;
+            height: 18px;
+            margin-left: auto;
+            color: var(--muted);
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+        .row:hover .edit-btn,
+        .row:focus-within .edit-btn { opacity: 1; }
+        .edit-btn:hover { color: var(--accent); }
+        .edit-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+        .edit-btn svg { width: 14px; height: 14px; }
+        .empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 24px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .empty[hidden] { display: none; }
+        .empty h1 { margin: 0; font-size: 15px; font-weight: 600; color: var(--fg); }
+        .empty p { margin: 0; max-width: 270px; }
+        .empty .empty-icon { width: 52px; height: 52px; opacity: 0.85; }
+        .empty .drop-hint { font-size: 12px; }
+        .primary {
+            margin-top: 4px;
+            padding: 6px 14px;
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            background: var(--accent);
+            color: #ffffff;
+            font: inherit;
+            cursor: pointer;
+        }
+        .primary:hover { filter: brightness(1.08); }
+        .primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .statusbar {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 3px;
+            min-height: 22px;
+            padding: 3px 8px;
+            border-top: 1px solid var(--line);
+            background: var(--hdr);
+            color: var(--muted);
+            font-size: 11px;
+            user-select: none;
+        }
+        .statusbar.error #status-count { color: var(--warn); font-weight: 600; }
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        #status-count { flex: 0 0 auto; white-space: nowrap; }
+        .search-box {
             position: relative;
-            padding-left: 1.2em;
+            flex: 1 1 auto;
+            min-width: 90px;
+            display: flex;
+            align-items: center;
+        }
+        #search-input {
+            width: 100%;
+            height: 20px;
+            padding: 0 22px 0 6px;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            background: var(--bg);
+            color: var(--fg);
+            font: 11px "Segoe UI", Tahoma, Arial, sans-serif;
+            outline: none;
+        }
+        #search-input::placeholder {
+            color: var(--muted);
+            font-style: italic;
+            opacity: 0.75;
+        }
+        #search-input:focus { border-color: var(--accent); }
+        #search-input::-webkit-search-cancel-button,
+        #search-input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+        .search-clear {
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            border: 0;
+            border-radius: 2px;
+            background: transparent;
+            color: #d13438;
+            cursor: pointer;
+            transform: translateY(-50%);
+            opacity: 0.45;
+        }
+        .search-box.has-text .search-clear { opacity: 1; }
+        .search-clear:hover { color: #b0272e; }
+        .search-clear:focus-visible { outline: 1px solid var(--accent); }
+        .search-clear svg { width: 11px; height: 11px; }
+        li.search-hidden { display: none; }
+        .status-sel {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .status-sel:empty { display: none; }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.45);
+        }
+        .modal-overlay[hidden] { display: none; }
+        .modal-card {
+            box-sizing: border-box;
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--bg);
+            color: var(--fg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            font-size: 12px;
+        }
+        .modal-title { margin: 0 0 6px; padding-right: 20px; font-size: 13px; }
+        .modal-close {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border: 0;
+            border-radius: 3px;
+            background: transparent;
+            color: #c42b1c;
+            cursor: pointer;
+        }
+        .modal-close:hover { background: var(--btn-hover); color: #8f1f14; }
+        .modal-close:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+        .modal-close svg { width: 11px; height: 11px; }
+        body.dark-mode .modal-close { color: #ff8b8b; }
+        body.dark-mode .modal-close:hover { color: #ffb3b3; }
+        .modal-text { margin: 0 0 10px; color: var(--muted); overflow-wrap: anywhere; }
+        .modal-label { display: block; margin: 8px 0 3px; color: var(--muted); }
+        .modal-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0 0 2px;
+            color: var(--muted);
             cursor: pointer;
             user-select: none;
         }
-        .tree li .icon {
-            width: 16px;
-            height: 16px;
-            vertical-align: middle;
-            margin-right: 4px;
-        }
-        /* Only style the label text, not the toggle */
-        .tree li span.label {
-            font-size: 11px !important;
-            font-weight: normal !important;
-            white-space: nowrap;
-        }
-        /* Prevent wrapping for legacy nodes too */
-        .treeview span, .treeview div span {
-            white-space: nowrap;
-        }
-        /* Make sure the file icon image is always sized correctly */
-        .tree li img.icon {
-            width: 16px !important;
-            height: 16px !important;
-            vertical-align: middle;
-            margin-right: 4px;
-        }
-        .tree li.selected > span {
-            background: #cce6ff;
-            border-radius: 3px;
-        }
-        .tree li:hover > span {
-            background: #e6f2ff;
-            border-radius: 3px;
-        }
-        .toggle {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            margin-right: 2px;
-            vertical-align: middle;
-            text-align: center;
-            font-size: 13px;
-            color: #666;
+        .modal-check[hidden] { display: none; }
+        .modal-check input {
+            width: 13px;
+            height: 13px;
+            margin: 0;
+            accent-color: var(--accent);
             cursor: pointer;
         }
-        .toggle {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            margin-right: 2px;
-            vertical-align: middle;
-            text-align: center;
+        .modal-input {
+            box-sizing: border-box;
+            width: 100%;
+            height: 24px;
+            padding: 0 6px;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            background: var(--bg);
+            color: var(--fg);
+            font: 12px "Segoe UI", Tahoma, Arial, sans-serif;
+            outline: none;
+        }
+        .modal-input:focus { border-color: var(--accent); }
+        .modal-input:disabled { opacity: 0.55; cursor: not-allowed; }
+        .modal-error { margin: 8px 0 0; color: var(--warn); }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .modal-actions #edit-delete { margin-right: auto; }
+        .modal-actions .primary { margin-top: 0; }
+        .secondary {
+            padding: 6px 14px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: var(--hdr);
+            color: var(--fg);
+            font: inherit;
             cursor: pointer;
-            background: none;
         }
-        .toggle svg {
-            width: 14px;
-            height: 14px;
-            display: inline-block;
-            vertical-align: middle;
+        .secondary:hover { background: var(--btn-hover); }
+        .danger { background: var(--warn); border-color: var(--warn); color: #ffffff; }
+        .danger:hover { filter: brightness(1.08); }
+        .drop-overlay {
+            position: fixed;
+            inset: 6px;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--accent);
+            border-radius: 8px;
+            background: var(--overlay);
+            pointer-events: none;
         }
-        .tree li.file > .toggle {
-            visibility: hidden;
+        body.dragging .drop-overlay { display: flex; }
+        .drop-card {
+            padding: 10px 18px;
+            border-radius: 6px;
+            background: var(--accent);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
         }
+        .tree-wrap::-webkit-scrollbar { width: 12px; height: 12px; }
+        .tree-wrap::-webkit-scrollbar-thumb {
+            border: 3px solid var(--bg);
+            border-radius: 8px;
+            background: var(--scroll);
+        }
+        .tree-wrap::-webkit-scrollbar-thumb:hover { background: #9a9a9a; }
     </style>
 </head>
 <body>
-    
-    <div class="treeview">
-        <ul class="tree" id="tree-root">
-            <!-- Tree will be rendered here -->
-        </ul>
+    <header class="pane-header">
+        <a class="pane-title" id="brand-link" href="preview.html" title="Show import details and download link">
+            <svg class="star" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l2 4.1 4.5.6-3.3 3.2.8 4.5L8 11.8l-4 2.1.8-4.5L1.5 6.2 6 5.6z" fill="currentColor"/></svg>
+            <span>Bookmarks</span>
+        </a>
+        <div class="pane-tools">
+            <button id="btn-clear" class="tool" type="button" title="Clear all bookmarks" aria-label="Clear all bookmarks">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            </button>
+            <button id="btn-upload" class="tool" type="button" title="Upload bookmarks file" aria-label="Upload bookmarks file">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10.5V2.5"/><path d="M5 5.5l3-3 3 3"/><path d="M2.5 10v2.5c0 .6.4 1 1 1h9c.6 0 1-.4 1-1V10"/></svg>
+            </button>
+            <button id="btn-download" class="tool" type="button" title="Download bookmarks.html" aria-label="Download bookmarks.html">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v8"/><path d="M5 7.5l3 3 3-3"/><path d="M2.5 11v1.5c0 .6.4 1 1 1h9c.6 0 1-.4 1-1V11"/></svg>
+            </button>
+            <button id="btn-sync" class="tool" type="button" title="Sync bookmarks" aria-label="Sync bookmarks">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 7.4a5.5 5.5 0 0 1 9.6-3.3"/><path d="M12.4 2.2v2.6H9.8"/><path d="M13.4 8.6a5.5 5.5 0 0 1-9.6 3.3"/><path d="M3.6 13.8v-2.6h2.6"/></svg>
+            </button>
+            <button id="btn-expand" class="tool" type="button" title="Expand all folders" aria-label="Expand all folders">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5l4 4 4-4"/><path d="M4 3.5l4 4 4-4"/></svg>
+            </button>
+            <button id="btn-collapse" class="tool" type="button" title="Collapse all folders" aria-label="Collapse all folders">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5l4-4 4 4"/><path d="M4 12.5l4-4 4 4"/></svg>
+            </button>
+            <button id="btn-sidebar-toggle" class="tool" type="button" title="Collapse panel" aria-label="Collapse panel" aria-expanded="true">
+                <svg class="icon-collapse" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 4L4.5 8l4 4"/><path d="M12.5 4l-4 4 4 4"/></svg>
+                <svg class="icon-expand" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 4l4 4-4 4"/><path d="M3.5 4l4 4-4 4"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="scroller" class="tree-wrap" tabindex="0" aria-label="Bookmark folders">
+        <ul id="tree-root" class="tree" role="tree"></ul>
+        <div id="empty" class="empty" hidden>
+            <svg class="empty-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.6c0-.6.5-1.1 1.1-1.1h3.1c.4 0 .8.2 1 .5l1.1 1.5h5.6c.6 0 1.1.5 1.1 1.1v6.8c0 .6-.5 1.1-1.1 1.1H2.6c-.6 0-1.1-.5-1.1-1.1z" fill="#f2b53d" stroke="#c08a10" stroke-width=".6"/><path d="M2.6 6h10.8v6.4c0 .33-.27.6-.6.6H3.2a.6.6 0 0 1-.6-.6z" fill="#ffd66b" stroke="#c08a10" stroke-width=".6"/></svg>
+            <h1>No bookmarks yet</h1>
+            <p>Upload an exported bookmarks file (.html) from Edge, Chrome, Firefox, Brave, Opera, or Safari.</p>
+            <button id="btn-empty-upload" class="primary" type="button">Upload bookmarks</button>
+            <p class="drop-hint">or drag the file anywhere in this panel</p>
+        </div>
+    </main>
+
+    <footer class="statusbar" id="statusbar">
+        <span id="status-sel" class="status-sel"></span>
+        <div class="status-row">
+            <span id="status-count">No bookmarks</span>
+            <div class="search-box" id="search-box">
+                <input id="search-input" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search bookmarks">
+                <button id="search-clear" class="search-clear" type="button" title="Clear search" aria-label="Clear search">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <div id="edit-overlay" class="modal-overlay" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+            <button id="edit-close" class="modal-close" type="button" title="Close" aria-label="Close">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            </button>
+            <h2 id="edit-title" class="modal-title"></h2>
+            <p id="edit-text" class="modal-text"></p>
+            <div id="edit-fields" hidden>
+                <label class="modal-check" id="edit-folder-row"><input id="edit-is-folder" type="checkbox"> New Folder</label>
+                <label class="modal-check" id="edit-separator-row"><input id="edit-is-separator" type="checkbox"> Separator</label>
+                <label class="modal-label" id="edit-name-label" for="edit-name">Name</label>
+                <input id="edit-name" class="modal-input" type="text" autocomplete="off" spellcheck="false">
+                <label class="modal-label" for="edit-url">URL</label>
+                <input id="edit-url" class="modal-input" type="text" placeholder="https://example.com" autocomplete="off" spellcheck="false">
+                <label class="modal-label" for="edit-tags">Tags</label>
+                <input id="edit-tags" class="modal-input" type="text" placeholder="Comma-separated, e.g. games, news" autocomplete="off" spellcheck="false">
+                <p id="edit-error" class="modal-error" hidden></p>
+            </div>
+            <div class="modal-actions">
+                <button id="edit-delete" class="primary danger" type="button" hidden>Delete</button>
+                <button id="edit-cancel" class="secondary" type="button">Cancel</button>
+                <button id="edit-save" class="primary" type="button">Save</button>
+            </div>
+        </div>
     </div>
+
+    <input id="file-input" type="file" accept=".html,.htm,.json" hidden>
+
+    <div id="drop-overlay" class="drop-overlay" aria-hidden="true">
+        <div class="drop-card">Drop the bookmarks file to build the tree</div>
+    </div>
+
+    <script src="bookmarks.js?v=3"></script>
     <script>
-        // Classic .chm style icons
-        const plusIcon = `<img class="toggle-icon" src="img/+.png" alt="+" width="16" height="16" style="vertical-align:middle;">`;
-        const minusIcon = `<img class="toggle-icon" src="img/-.png" alt="-" width="16" height="16" style="vertical-align:middle;">`;
-        const folderClosed = `<img class="folder-icon" src="img/closed.png" alt="[+]" width="16" height="16" style="vertical-align:middle;">`;
-        const folderOpen = `<img class="folder-icon" src="img/open.png" alt="[-]" width="16" height="16" style="vertical-align:middle;">`;
-        const fileIcon = `<img class='icon' src='img/connector.png' alt='|' width='16' height='16' style='vertical-align:middle;margin-right:2px;'><img class='icon' src='img/page.png' alt='Page' width='16' height='16' style='vertical-align:middle;'>`;
+        (function () {
+            'use strict';
 
+            var treeRoot = document.getElementById('tree-root');
+            var scroller = document.getElementById('scroller');
+            var emptyState = document.getElementById('empty');
+            var statusbar = document.getElementById('statusbar');
+            var countEl = document.getElementById('status-count');
+            var selectionEl = document.getElementById('status-sel');
+            var fileInput = document.getElementById('file-input');
+            var searchBox = document.getElementById('search-box');
+            var searchInput = document.getElementById('search-input');
+            var searchClear = document.getElementById('search-clear');
 
-        // Tree rendering function (kept for external use)
-        function renderTree(data, parent, depth = 0) {
-            data.forEach(node => {
-                const li = document.createElement('li');
-                li.classList.add(node.children ? 'folder' : 'file');
-                if (node.children) {
-                    li.classList.add('collapsed');
-                    // Start collapsed by default
-                    let expanded = false;
-                    li.innerHTML = `<span class="toggle" style="vertical-align:middle;display:inline-block;height:16px;line-height:16px;">${plusIcon}</span><span class="folder-icon-wrapper" style="vertical-align:middle;display:inline-block;height:16px;line-height:16px;">${folderClosed}</span><span class="folder-spacer" style="display:inline-block;width:4px;"></span><span class="label">${node.label}</span>`;
-                    const ul = document.createElement('ul');
-                    ul.style.display = 'none';
-                    renderTree(node.children, ul, depth + 1);
-                    li.appendChild(ul);
+            var currentTree = [];
+            var stats = { folders: 0, links: 0 };
+            var selectedLi = null;
+            var lastMessageRender = 0;
+            var storageTimer = null;
+            var autoExpanded = [];
 
+            function setCounts(text, isError) {
+                countEl.textContent = text;
+                statusbar.classList.toggle('error', !!isError);
+            }
 
-                    // Toggle handler (for both plus/minus and folder icon)
-                    function toggleFolder(e) {
-                        e.stopPropagation();
-                        expanded = ul.style.display === 'block';
-                        ul.style.display = expanded ? 'none' : 'block';
-                        li.classList.toggle('expanded', !expanded);
-                        // Update both icons
-                        const toggleSpan = li.querySelector('.toggle');
-                        if (toggleSpan) toggleSpan.innerHTML = expanded ? plusIcon : minusIcon;
-                        // Replace folder icon with closed.png or open.png
-                        let folderWrapper = li.querySelector('.folder-icon-wrapper');
-                        if (folderWrapper) {
-                            const newImg = document.createElement('img');
-                            newImg.className = 'folder-icon';
-                            newImg.src = expanded ? 'img/closed.png' : 'img/open.png';
-                            newImg.alt = expanded ? '[+]' : '[-]';
-                            newImg.width = 16;
-                            newImg.height = 16;
-                            newImg.style.verticalAlign = 'middle';
-                            newImg.style.cursor = 'pointer';
-                            newImg.onclick = toggleFolder;
-                            folderWrapper.innerHTML = '';
-                            folderWrapper.appendChild(newImg);
-                        }
-                        // Re-attach toggle icon listener
-                        attachToggleListeners();
-                        console.log('[DEBUG] Toggle clicked:', node.label, 'Now expanded:', !expanded);
-                    }
-
-                    // Attach listeners to folder icon
-                    function attachFolderListeners() {
-                        let folderImg = li.querySelector('.folder-icon');
-                        if (folderImg) {
-                            folderImg.onclick = toggleFolder;
-                            folderImg.style.cursor = 'pointer';
-                        }
-                    }
-                    // Attach listeners to plus/minus icon
-                    function attachToggleListeners() {
-                        const toggleIcon = li.querySelector('.toggle-icon');
-                        if (toggleIcon) {
-                            toggleIcon.onclick = toggleFolder;
-                            toggleIcon.style.cursor = 'pointer';
-                        }
-                    }
-                    attachFolderListeners();
-                    attachToggleListeners();
-
-                    li.querySelector('span.label').onclick = function(e) {
-                        e.stopPropagation();
-                        selectNode(li);
-                        console.log('[DEBUG] Node selected:', node.label);
-                    };
+            function updateCounts() {
+                if (!currentTree.length) {
+                    setCounts('No bookmarks', false);
                 } else {
-                    // Use flex to keep icon and label on one line, never wrap
-                    li.style.display = 'flex';
-                    li.style.alignItems = 'center';
-                    li.style.whiteSpace = 'nowrap';
-                    // Do not set overflow on li; allow it to expand
-                    li.innerHTML = `<span class="toggle"></span>${fileIcon}<span class="label">${node.label}</span>`;
-                    const label = li.querySelector('span.label');
-                    label.style.cursor = 'pointer';
-                    label.style.flex = '0 1 auto';
-                    label.style.overflow = 'visible';
-                    label.style.textOverflow = 'unset';
-                    label.style.whiteSpace = 'nowrap';
-                    label.onclick = function(e) {
-                        e.stopPropagation();
-                        selectNode(li);
-                        // Try to open in preview.html frame (named 'rightFrame')
-                        let loaded = false;
-                        try {
-                            let frame = null;
-                            if (window.top && window.top.frames && window.top.frames['rightFrame']) {
-                                frame = window.top.frames['rightFrame'];
-                            } else if (window.parent && window.parent.frames && window.parent.frames['rightFrame']) {
-                                frame = window.parent.frames['rightFrame'];
-                            }
-                            if (frame && typeof frame.location !== 'undefined') {
-                                frame.location.href = node.url;
-                                loaded = true;
-                            }
-                        } catch (err) {
-                            console.log('[DEBUG] Frame navigation error:', err);
-                        }
-                        if (!loaded) {
-                            window.open(node.url, '_blank'); // fallback
-                        }
-                        console.log('[DEBUG] Leaf selected and loaded:', node.label, node.url, 'Loaded in frame:', loaded);
-                    };
+                    setCounts(
+                        stats.folders.toLocaleString() + ' folders \u00b7 ' +
+                        stats.links.toLocaleString() + ' links',
+                        false
+                    );
                 }
-                parent.appendChild(li);
-                console.log('[DEBUG] Rendered node:', node.label, 'Has children:', !!node.children);
-            });
-        }
+            }
 
-        function selectNode(li) {
-            document.querySelectorAll('.tree li.selected').forEach(el => el.classList.remove('selected'));
-            li.classList.add('selected');
-        }
+            var EDIT_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 2.6l2.8 2.8-8.3 8.3-3.5.7.7-3.5z"/><path d="M9.2 4l2.8 2.8"/></svg>';
+            var ADD_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
 
-        // --- Bookmark Parsing and Tree Data Handling (from legacy section, improved) ---
-        function parseBookmarks(raw, type) {
-            if (type === 'json') {
+            var editOverlay = document.getElementById('edit-overlay');
+            var editTitle = document.getElementById('edit-title');
+            var editText = document.getElementById('edit-text');
+            var editFields = document.getElementById('edit-fields');
+            var editName = document.getElementById('edit-name');
+            var editNameLabel = document.getElementById('edit-name-label');
+            var editUrl = document.getElementById('edit-url');
+            var editTags = document.getElementById('edit-tags');
+            var editIsFolder = document.getElementById('edit-is-folder');
+            var editError = document.getElementById('edit-error');
+            var editCancel = document.getElementById('edit-cancel');
+            var editSave = document.getElementById('edit-save');
+            var editDelete = document.getElementById('edit-delete');
+            var editClose = document.getElementById('edit-close');
+            var editFolderRow = document.getElementById('edit-folder-row');
+            var editSeparatorRow = document.getElementById('edit-separator-row');
+            var editIsSeparator = document.getElementById('edit-is-separator');
+            var editMode = '';
+            var editTarget = null;
+
+            function makeEditButton(li, node, kind) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'edit-btn';
+                var name = node.n || (kind === 'folder' ? 'Untitled folder' : (kind === 'separator' ? 'Separator' : 'Untitled link'));
+                btn.title = 'Edit ' + kind;
+                btn.setAttribute('aria-label', 'Edit ' + kind + ' ' + name);
+                btn.innerHTML = EDIT_SVG;
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openEditModal(li, node, kind);
+                });
+                return btn;
+            }
+
+            function buildAddRow(folderNode) {
+                var li = document.createElement('li');
+                li.className = 'add-row';
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'add-btn';
+                btn.title = folderNode
+                    ? 'Add a bookmark to ' + (folderNode.n || 'this folder')
+                    : 'Add a bookmark';
+                btn.setAttribute('aria-label', btn.title);
+                btn.innerHTML = ADD_SVG;
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    openAddModal(folderNode, li);
+                });
+                li.appendChild(btn);
+                return li;
+            }
+
+            function showEditError(text) {
+                editError.textContent = text;
+                editError.hidden = false;
+            }
+
+            function parseTags(text) {
+                var parts = String(text || '').split(',');
+                var seen = {};
+                var tags = [];
+                for (var i = 0; i < parts.length; i++) {
+                    var tag = parts[i].trim();
+                    if (!tag) continue;
+                    var key = tag.toLowerCase();
+                    if (seen[key]) continue;
+                    seen[key] = true;
+                    tags.push(tag);
+                }
+                return tags;
+            }
+
+            function closeEditModal() {
+                editOverlay.hidden = true;
+                editMode = '';
+                editTarget = null;
+                scroller.focus({ preventScroll: true });
+            }
+
+            function findParentArray(node, list) {
+                var pool = list || currentTree;
+                for (var i = 0; i < pool.length; i++) {
+                    if (pool[i] === node) return pool;
+                    if (pool[i] && Array.isArray(pool[i].c)) {
+                        var found = findParentArray(node, pool[i].c);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
+
+            function refreshFolderTitle(folderNode, folderLi) {
+                if (!folderLi) return;
+                var row = folderLi.querySelector(':scope > .row');
+                if (!row) return;
+                var count = (folderNode.c || []).length;
+                row.title = (folderNode.n || 'Untitled folder') + (count ? ' (' + count + ')' : ' (empty)');
+            }
+
+            function afterTreeChange() {
+                stats = WeblinksBookmarks.countTree(currentTree);
+                updateCounts();
+                var sourceName = WeblinksBookmarks.getSourceName();
+                WeblinksBookmarks.saveTree(currentTree, sourceName || undefined);
+                WeblinksBookmarks.postStatsToRightFrame({
+                    folders: stats.folders,
+                    links: stats.links,
+                    name: sourceName || 'bookmarks'
+                });
+                notifyAutoExport();
+                if (!currentTree.length) render([]);
+            }
+
+            function syncFolderMode() {
+                if (editIsSeparator.checked) editIsFolder.checked = false;
+                else if (editIsFolder.checked) editIsSeparator.checked = false;
+                var isSep = editIsSeparator.checked;
+                var isFolder = editIsFolder.checked;
+                editIsFolder.disabled = isSep;
+                editIsSeparator.disabled = isFolder;
+                editName.disabled = isSep;
+                editUrl.disabled = isSep || isFolder;
+                editTags.disabled = isSep || isFolder;
+                editName.placeholder = isSep ? 'Separators do not have a name' : '';
+                editUrl.placeholder = isSep
+                    ? 'Separators do not have a URL'
+                    : (isFolder ? 'Folders do not have a URL' : 'https://example.com');
+                editTags.placeholder = isSep
+                    ? 'Separators do not have tags'
+                    : (isFolder ? 'Folders do not have tags' : 'Comma-separated, e.g. games, news');
+                editNameLabel.textContent = isFolder ? 'Folder name' : 'Name';
+                if (editMode === 'add') {
+                    var noun = isSep ? 'separator' : (isFolder ? 'folder' : 'bookmark');
+                    var parentFolder = editTarget && editTarget.folder;
+                    editText.textContent = parentFolder
+                        ? 'New ' + noun + ' inside "' + (parentFolder.n || 'Untitled folder') + '".'
+                        : 'New ' + noun + ' in the top level.';
+                }
+                editError.hidden = true;
+            }
+
+            editIsFolder.addEventListener('change', syncFolderMode);
+            editIsSeparator.addEventListener('change', syncFolderMode);
+
+            function applyRightLocation(loc) {
+                if (!loc || typeof loc.href !== 'string' || !loc.href) return;
+                if (/\/preview\.html(?:[?#].*)?$/i.test(loc.href)) return;
+                if (editMode !== 'add' || editOverlay.hidden) return;
+                if (editIsSeparator.checked) return;
+                if (editName.value === '' && loc.title) editName.value = String(loc.title).trim();
+                if (!editIsFolder.checked && editUrl.value === '') editUrl.value = loc.href;
+            }
+
+            function requestRightLocation() {
                 try {
-                    const data = JSON.parse(raw);
-                    // Firefox JSON: look for roots/bookmark_bar or children
-                    if (data.roots && data.roots.bookmark_bar) {
-                        return data.roots.bookmark_bar.children || [];
+                    window.parent.postMessage({ type: 'weblinks:request-right-location' }, '*');
+                } catch (err) { /* ignore */ }
+            }
+
+            // Titles for cross-origin pages arrive a moment after the modal opens.
+            window.addEventListener('message', function (e) {
+                var d = e.data;
+                if (!d || d.type !== 'weblinks:right-location') return;
+                applyRightLocation(d);
+            });
+
+            function openAddModal(folderNode, addRowLi) {
+                editMode = 'add';
+                editTarget = { folder: folderNode, addRow: addRowLi };
+                editTitle.textContent = 'Bookmark Properties';
+                editText.textContent = folderNode
+                    ? 'New bookmark inside "' + (folderNode.n || 'Untitled folder') + '".'
+                    : 'New bookmark in the top level.';
+                editFields.hidden = false;
+                editFolderRow.hidden = false;
+                editSeparatorRow.hidden = false;
+                editName.value = '';
+                editUrl.value = '';
+                editTags.value = '';
+                editIsFolder.checked = false;
+                editIsSeparator.checked = false;
+                syncFolderMode();
+                editError.hidden = true;
+                editSave.textContent = 'Save';
+                editSave.classList.remove('danger');
+                editDelete.hidden = true;
+                editOverlay.hidden = false;
+                editName.focus();
+                requestRightLocation();
+            }
+
+            function openEditModal(li, node, kind) {
+                var isFolder = kind === 'folder';
+                var isSep = kind === 'separator';
+                editMode = 'edit';
+                editTarget = { li: li, node: node, kind: kind };
+                editTitle.textContent = 'Bookmark Properties';
+                var parentLi = li.parentElement ? li.parentElement.closest('li.node.folder') : null;
+                editText.textContent = parentLi && parentLi.__node
+                    ? 'Inside "' + (parentLi.__node.n || 'Untitled folder') + '".'
+                    : 'Top level.';
+                editFields.hidden = false;
+                editFolderRow.hidden = false;
+                editSeparatorRow.hidden = false;
+                editName.value = node.n || '';
+                editUrl.value = node.u || '';
+                editTags.value = (node.t || []).join(', ');
+                editIsFolder.checked = isFolder;
+                editIsSeparator.checked = isSep;
+                syncFolderMode();
+                editError.hidden = true;
+                editSave.textContent = 'Save';
+                editSave.classList.remove('danger');
+                editDelete.hidden = false;
+                editOverlay.hidden = false;
+                (isSep ? editSave : editName).focus();
+            }
+
+            function commitAdd() {
+                var target = editTarget;
+                var parentList = target.folder ? target.folder.c : currentTree;
+                if (!Array.isArray(parentList)) return;
+
+                var isSep = editIsSeparator.checked;
+                var isFolder = !isSep && editIsFolder.checked;
+                var name = editName.value.trim();
+                var node;
+                if (isSep) {
+                    node = { sep: true };
+                } else if (isFolder) {
+                    if (!name) { showEditError('Enter a folder name.'); return; }
+                    node = { n: name, c: [] };
+                } else {
+                    var url = editUrl.value.trim();
+                    if (!url) { showEditError('Enter a URL.'); return; }
+                    if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url;
+                    if (!isSafeUrl(url)) { showEditError('That link type is not allowed.'); return; }
+                    node = { n: name || url, u: url };
+                    var tags = parseTags(editTags.value);
+                    if (tags.length) node.t = tags;
+                }
+                parentList.push(node);
+                var li = buildNode(node);
+                if (target.addRow && target.addRow.parentNode) {
+                    target.addRow.parentNode.insertBefore(li, target.addRow);
+                }
+                if (isFolder) setExpanded(li, true);
+                if (target.folder) {
+                    refreshFolderTitle(target.folder, target.addRow.parentNode.parentElement);
+                }
+                closeEditModal();
+                selectNode(li, true);
+                afterTreeChange();
+            }
+
+            function commitEdit() {
+                var target = editTarget;
+                if (!target || !target.node) return;
+                var node = target.node;
+                var kind = target.kind;
+                var name = editName.value.trim();
+                var isSep = editIsSeparator.checked;
+                var isFolder = !isSep && editIsFolder.checked;
+                var nextKind = isSep ? 'separator' : (isFolder ? 'folder' : 'bookmark');
+
+                if (isSep) {
+                    node.sep = true;
+                    delete node.c;
+                    delete node.n;
+                    delete node.u;
+                    delete node.t;
+                } else if (isFolder) {
+                    if (!name) { showEditError('Enter a folder name.'); return; }
+                    delete node.sep;
+                    delete node.u;
+                    delete node.t;
+                    node.n = name;
+                    if (!Array.isArray(node.c)) node.c = [];
+                } else {
+                    var url = editUrl.value.trim();
+                    if (!url) { showEditError('Enter a URL.'); return; }
+                    if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url;
+                    if (!isSafeUrl(url)) { showEditError('That link type is not allowed.'); return; }
+                    delete node.sep;
+                    delete node.c;
+                    node.n = name || url;
+                    node.u = url;
+                    var tags = parseTags(editTags.value);
+                    if (tags.length) node.t = tags;
+                    else delete node.t;
+                }
+
+                if (nextKind !== kind) {
+                    var wasSelected = selectedLi === target.li;
+                    var parentLi = target.li.parentElement ? target.li.parentElement.closest('li.node.folder') : null;
+                    var parentNode = parentLi ? parentLi.__node : null;
+                    var replacement = buildNode(node);
+                    target.li.parentNode.replaceChild(replacement, target.li);
+                    if (selectedLi === target.li) selectedLi = null;
+                    if (nextKind === 'folder') setExpanded(replacement, true);
+                    if (parentNode) refreshFolderTitle(parentNode, parentLi);
+                    closeEditModal();
+                    if (wasSelected) selectNode(replacement, true);
+                    afterTreeChange();
+                    return;
+                }
+
+                refreshNodeRow(target.li, node, kind);
+                if (selectedLi === target.li) showSelectionText(node);
+                closeEditModal();
+                afterTreeChange();
+            }
+
+            function refreshNodeRow(li, node, kind) {
+                var row = li.querySelector(':scope > .row');
+                if (!row) return;
+                var editBtn = row.querySelector('.edit-btn');
+                if (node.sep) {
+                    row.title = 'Separator';
+                    row.setAttribute('aria-label', 'Separator');
+                    if (editBtn) editBtn.setAttribute('aria-label', 'Edit separator Separator');
+                    return;
+                }
+                var label = row.querySelector('.label');
+                var fallback = kind === 'folder' ? 'Untitled folder' : 'Untitled link';
+                var text = node.n || fallback;
+                if (label) label.textContent = text;
+                if (editBtn) editBtn.setAttribute('aria-label', 'Edit ' + kind + ' ' + text);
+
+                if (kind === 'folder') {
+                    refreshFolderTitle(node, li);
+                    row.setAttribute('aria-label', text);
+                } else {
+                    var url = node.u || '';
+                    row.dataset.url = url;
+                    row.title = (node.n ? node.n + '\n' : '') + url;
+                    if (label) label.title = (node.n ? node.n + ' \u2014 ' : '') + url;
+                }
+            }
+
+            function commitDelete() {
+                var target = editTarget;
+                var list = findParentArray(target.node);
+                if (list) {
+                    var idx = list.indexOf(target.node);
+                    if (idx !== -1) list.splice(idx, 1);
+                }
+                if (selectedLi && target.li.contains(selectedLi)) clearSelection();
+                var parentLi = target.li.parentElement ? target.li.parentElement.closest('li.node.folder') : null;
+                var parentNode = parentLi ? parentLi.__node : null;
+                target.li.remove();
+                if (parentNode) refreshFolderTitle(parentNode, parentLi);
+                closeEditModal();
+                afterTreeChange();
+            }
+
+            function buildNode(node) {
+                var isSeparator = !!node.sep;
+                var isFolder = !isSeparator && Array.isArray(node.c);
+                var li = document.createElement('li');
+                li.className = 'node ' + (isSeparator ? 'separator' : (isFolder ? 'folder' : 'link'));
+                li.setAttribute('role', 'treeitem');
+                li.__node = node;
+
+                var row = document.createElement('div');
+                row.className = 'row';
+
+                var twisty = document.createElement('span');
+                twisty.className = 'twisty';
+                row.appendChild(twisty);
+
+                if (isSeparator) {
+                    twisty.classList.add('leaf');
+                    var spacer = document.createElement('span');
+                    spacer.className = 'ico';
+                    row.appendChild(spacer);
+                    var hr = document.createElement('hr');
+                    hr.className = 'tree-sep';
+                    row.appendChild(hr);
+                    li.appendChild(row);
+                    row.title = 'Separator';
+                    row.setAttribute('aria-label', 'Separator');
+                    row.appendChild(makeEditButton(li, node, 'separator'));
+                    return li;
+                }
+
+                var icon = document.createElement('span');
+                icon.className = 'ico ' + (isFolder ? 'folder-ico' : 'link-ico');
+                row.appendChild(icon);
+
+                var label = document.createElement('span');
+                label.className = 'label';
+                label.textContent = node.n || (isFolder ? 'Untitled folder' : 'Untitled link');
+                row.appendChild(label);
+
+                li.appendChild(row);
+
+                if (isFolder) {
+                    var children = node.c || [];
+                    var list = document.createElement('ul');
+                    list.className = 'children';
+                    list.setAttribute('role', 'group');
+                    var frag = document.createDocumentFragment();
+                    for (var i = 0; i < children.length; i++) {
+                        frag.appendChild(buildNode(children[i]));
                     }
-                    if (data.children) return data.children;
-                    return [];
-                } catch (e) { return []; }
-            } else if (type === 'html' || type === 'htm') {
-                // Parse Netscape HTML format
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(raw, 'text/html');
-                function walkDL(dl) {
-                    let tree = [];
-                    for (const node of dl.children) {
-                        if (node.tagName === 'DT') {
-                            const h3 = node.querySelector('h3');
-                            if (h3) {
-                                // Folder
-                                const folder = {
-                                    label: h3.textContent,
-                                    children: [],
-                                };
-                                const subDL = node.nextElementSibling;
-                                if (subDL && subDL.tagName === 'DL') {
-                                    folder.children = walkDL(subDL);
-                                }
-                                tree.push(folder);
-                            } else {
-                                // Bookmark
-                                const a = node.querySelector('a');
-                                if (a) {
-                                    tree.push({
-                                        label: a.textContent,
-                                        url: a.getAttribute('href')
-                                    });
-                                }
+                    list.appendChild(frag);
+                    list.appendChild(buildAddRow(node));
+                    li.appendChild(list);
+                    li.setAttribute('aria-expanded', 'false');
+                    row.title = (node.n || 'Untitled folder') + (children.length ? ' (' + children.length + ')' : ' (empty)');
+                    row.setAttribute('aria-label', node.n || 'Untitled folder');
+                    row.appendChild(makeEditButton(li, node, 'folder'));
+                } else {
+                    twisty.classList.add('leaf');
+                    var url = node.u || '';
+                    row.dataset.url = url;
+                    row.title = (node.n ? node.n + '\n' : '') + url;
+                    icon.title = 'Open in a new tab';
+                    label.title = (node.n ? node.n + ' \u2014 ' : '') + url;
+                    row.appendChild(makeEditButton(li, node, 'bookmark'));
+                }
+                return li;
+            }
+
+            function setExpanded(li, expanded) {
+                var list = li.querySelector(':scope > ul.children');
+                if (!list) return;
+                li.classList.toggle('expanded', expanded);
+                li.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            }
+
+            function toggleFolder(li) {
+                setExpanded(li, !li.classList.contains('expanded'));
+            }
+
+            function clearSelection() {
+                if (selectedLi) selectedLi.classList.remove('selected');
+                selectedLi = null;
+                selectionEl.textContent = '';
+                selectionEl.title = '';
+            }
+
+            function showSelectionText(node) {
+                var text = node.sep ? 'Separator' : (node.n || '');
+                if (!node.sep && !Array.isArray(node.c) && node.u) {
+                    text += (text ? ' \u2014 ' : '') + node.u;
+                }
+                selectionEl.textContent = text;
+                selectionEl.title = text;
+            }
+
+            function selectNode(li, scrollIntoView) {
+                if (!li || li === selectedLi) {
+                    if (li && scrollIntoView) {
+                        var currentRow = li.querySelector(':scope > .row');
+                        if (currentRow) currentRow.scrollIntoView({ block: 'nearest' });
+                    }
+                    return;
+                }
+                if (selectedLi) selectedLi.classList.remove('selected');
+                selectedLi = li;
+                li.classList.add('selected');
+                if (scrollIntoView) {
+                    var row = li.querySelector(':scope > .row');
+                    if (row) row.scrollIntoView({ block: 'nearest' });
+                }
+                showSelectionText(li.__node || {});
+            }
+
+            function getRightFrame() {
+                try {
+                    if (window.top && window.top.frames && window.top.frames['rightFrame']) {
+                        return window.top.frames['rightFrame'];
+                    }
+                } catch (err) { /* cross-origin */ }
+                return null;
+            }
+
+            function isSafeUrl(url) {
+                try {
+                    var parsed = new URL(url, document.baseURI);
+                    return ['http:', 'https:', 'file:', 'ftp:', 'mailto:'].indexOf(parsed.protocol) !== -1;
+                } catch (err) {
+                    return false;
+                }
+            }
+
+            function checkUrl(url) {
+                url = String(url || '').trim();
+                if (!url) return '';
+                if (!isSafeUrl(url)) {
+                    selectionEl.textContent = 'Blocked unsafe link: ' + url;
+                    selectionEl.title = selectionEl.textContent;
+                    return '';
+                }
+                return url;
+            }
+
+            function rightFramePresent() {
+                if (window.parent === window) return false;
+                try {
+                    if (window.top && window.top.frames) {
+                        return !!window.top.frames['rightFrame'];
+                    }
+                } catch (err) { /* cross-origin: assume the parent relays */ }
+                return true;
+            }
+
+            function openInRightFrame(url) {
+                url = checkUrl(url);
+                if (!url) return;
+                var frame = getRightFrame();
+                if (frame && frame !== window) {
+                    try {
+                        frame.location.href = url;
+                        try {
+                            window.parent.postMessage({ type: 'weblinks:right-location', href: url, title: '' }, '*');
+                        } catch (notifyErr) { /* ignore */ }
+                        return;
+                    } catch (err) { /* cross-origin: fall through to the parent relay */ }
+                }
+                if (rightFramePresent()) {
+                    try {
+                        window.parent.postMessage({ type: 'weblinks:right-navigate', url: url }, '*');
+                        return;
+                    } catch (err) { /* fall through */ }
+                }
+                window.location.href = url;
+            }
+
+            function openInNewTab(url) {
+                url = checkUrl(url);
+                if (!url) return;
+                window.open(url, '_blank', 'noopener');
+            }
+
+            function render(tree) {
+                currentTree = Array.isArray(tree) ? tree : [];
+                stats = WeblinksBookmarks.countTree(currentTree);
+                autoExpanded = [];
+                clearSelection();
+                treeRoot.textContent = '';
+                emptyState.hidden = currentTree.length > 0;
+
+                if (!currentTree.length) {
+                    updateCounts();
+                    return;
+                }
+
+                var root = document.createDocumentFragment();
+                for (var i = 0; i < currentTree.length; i++) {
+                    root.appendChild(buildNode(currentTree[i]));
+                }
+                treeRoot.appendChild(root);
+                treeRoot.appendChild(buildAddRow(null));
+
+                // Open the first level so the hierarchy is visible right away.
+                var topLevel = treeRoot.querySelectorAll(':scope > li.folder');
+                for (var j = 0; j < topLevel.length; j++) {
+                    setExpanded(topLevel[j], true);
+                }
+                updateCounts();
+                applySearch(searchInput.value);
+            }
+
+            function renderFromStorage() {
+                var tree = WeblinksBookmarks.loadTree();
+                if (!tree.length && currentTree.length) return;
+                render(tree);
+            }
+
+            function scheduleStorageRender() {
+                clearTimeout(storageTimer);
+                storageTimer = setTimeout(function () {
+                    if (Date.now() - lastMessageRender < 1500) return;
+                    renderFromStorage();
+                }, 120);
+            }
+
+            function updateSearchClear() {
+                searchBox.classList.toggle('has-text', searchInput.value.length > 0);
+            }
+
+            function collapseSearchExpansion() {
+                for (var i = 0; i < autoExpanded.length; i++) {
+                    var li = autoExpanded[i];
+                    if (li && li.isConnected) setExpanded(li, false);
+                }
+                autoExpanded = [];
+            }
+
+            function revealAncestors(li) {
+                var parent = li.parentElement ? li.parentElement.closest('li.node.folder') : null;
+                while (parent) {
+                    if (!parent.classList.contains('expanded')) {
+                        setExpanded(parent, true);
+                        autoExpanded.push(parent);
+                    }
+                    parent = parent.parentElement ? parent.parentElement.closest('li.node.folder') : null;
+                }
+            }
+
+            function applySearch(rawQuery) {
+                collapseSearchExpansion();
+
+                var query = String(rawQuery || '').trim().toLowerCase();
+                var links = treeRoot.querySelectorAll('li.node.link');
+                var folders = treeRoot.querySelectorAll('li.node.folder');
+                var addRows = treeRoot.querySelectorAll('li.add-row');
+                var separators = treeRoot.querySelectorAll('li.node.separator');
+                var i;
+
+                if (!query) {
+                    for (i = 0; i < links.length; i++) links[i].classList.remove('search-hidden');
+                    for (i = 0; i < folders.length; i++) folders[i].classList.remove('search-hidden');
+                    for (i = 0; i < addRows.length; i++) addRows[i].classList.remove('search-hidden');
+                    for (i = 0; i < separators.length; i++) separators[i].classList.remove('search-hidden');
+                    return;
+                }
+
+                for (i = 0; i < addRows.length; i++) addRows[i].classList.add('search-hidden');
+                for (i = 0; i < separators.length; i++) separators[i].classList.add('search-hidden');
+
+                for (i = 0; i < links.length; i++) {
+                    var label = links[i].querySelector(':scope > .row .label');
+                    var text = label ? label.textContent : '';
+                    var hit = text.toLowerCase().indexOf(query) !== -1;
+                    links[i].classList.toggle('search-hidden', !hit);
+                    if (hit) revealAncestors(links[i]);
+                }
+
+                // Bottom-up: a folder stays visible when anything matching
+                // remains inside it.
+                for (i = folders.length - 1; i >= 0; i--) {
+                    var list = folders[i].querySelector(':scope > ul.children');
+                    var visibleChild = false;
+                    if (list) {
+                        for (var k = 0; k < list.children.length; k++) {
+                            if (!list.children[k].classList.contains('search-hidden')) {
+                                visibleChild = true;
+                                break;
                             }
                         }
                     }
-                    return tree;
+                    folders[i].classList.toggle('search-hidden', !visibleChild);
                 }
-                const rootDL = doc.querySelector('dl');
-                return rootDL ? walkDL(rootDL) : [];
             }
-            return [];
-        }
 
-        function getUploadedBookmarks() {
-            let raw = localStorage.getItem('uploadedBookmarks');
-            let type = localStorage.getItem('uploadedBookmarksType');
-            if (!raw) return null;
-            if (!type) type = 'json';
-            try {
-                return parseBookmarks(raw, type);
-            } catch (e) { return null; }
-        }
-
-        function renderUploadedBookmarks() {
-            const treeRoot = document.getElementById('tree-root');
-            treeRoot.innerHTML = '';
-            const bookmarks = getUploadedBookmarks();
-            if (bookmarks && bookmarks.length) {
-                renderTree(bookmarks, treeRoot);
+            function importFile(file) {
+                if (!file) return;
+                var ext = file.name.indexOf('.') >= 0 ? file.name.split('.').pop().toLowerCase() : '';
+                if (['html', 'htm', 'json'].indexOf(ext) === -1) {
+                    setCounts('Unsupported file type. Choose an .html, .htm, or .json bookmarks export.', true);
+                    return;
+                }
+                setCounts('Reading ' + file.name + '\u2026', false);
+                file.text().then(function (raw) {
+                    setTimeout(function () {
+                        var result;
+                        try {
+                            result = WeblinksBookmarks.parseFileText(raw, file.name);
+                        } catch (err) {
+                            setCounts('Could not parse ' + file.name + '.', true);
+                            return;
+                        }
+                        if (!result.tree.length) {
+                            setCounts('No bookmarks were found in ' + file.name + '.', true);
+                            return;
+                        }
+                        var saved = WeblinksBookmarks.saveTree(result.tree, file.name);
+                        render(result.tree);
+                        if (!saved.ok) {
+                            setCounts(
+                                stats.folders.toLocaleString() + ' folders \u00b7 ' +
+                                stats.links.toLocaleString() + ' links \u2014 not saved (browser storage is full)',
+                                true
+                            );
+                        }
+                        WeblinksBookmarks.postStatsToRightFrame({
+                            folders: result.folders,
+                            links: result.links,
+                            name: file.name,
+                            saved: saved.ok
+                        });
+                        notifyAutoExport();
+                    }, 20);
+                }).catch(function () {
+                    setCounts('Could not read ' + file.name + '.', true);
+                });
             }
-        }
 
-        // Initial render if bookmarks are present
-        renderUploadedBookmarks();
-
-        // Listen for storage events (from upload in weblinks.html)
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'uploadedBookmarks' || e.key === 'bookmarksUpdated') {
-                renderUploadedBookmarks();
+            function visibleNodes() {
+                var nodes = treeRoot.querySelectorAll('li.node');
+                var out = [];
+                for (var i = 0; i < nodes.length; i++) {
+                    if (nodes[i].offsetParent !== null) out.push(nodes[i]);
+                }
+                return out;
             }
-        });
+
+            /* Click / double-click behaviour, delegated so thousands of
+             * rows only register two listeners in total. */
+            treeRoot.addEventListener('click', function (e) {
+                var row = e.target.closest ? e.target.closest('.row') : null;
+                if (!row) return;
+                var li = row.parentElement;
+                if (!li || !li.classList.contains('node')) return;
+
+                scroller.focus({ preventScroll: true });
+
+                if (e.target.closest('.twisty') && li.classList.contains('folder')) {
+                    selectNode(li, false);
+                    toggleFolder(li);
+                    return;
+                }
+                selectNode(li, false);
+                if (li.classList.contains('link') && e.detail <= 1) {
+                    var url = (li.__node || {}).u;
+                    // Pop-out icon opens a tab; the text targets the right panel.
+                    if (e.target.closest('.ico.link-ico')) {
+                        openInNewTab(url);
+                    } else {
+                        openInRightFrame(url);
+                    }
+                }
+            });
+
+            treeRoot.addEventListener('dblclick', function (e) {
+                if (e.target.closest && (e.target.closest('.edit-btn') || e.target.closest('.add-btn'))) return;
+                var row = e.target.closest ? e.target.closest('.row') : null;
+                if (!row) return;
+                var li = row.parentElement;
+                if (li && li.classList.contains('folder')) toggleFolder(li);
+            });
+
+            scroller.addEventListener('keydown', function (e) {
+                var nodes = visibleNodes();
+                if (!nodes.length) return;
+                var index = selectedLi ? nodes.indexOf(selectedLi) : -1;
+                var li;
+
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        selectNode(nodes[Math.min(index + 1, nodes.length - 1)], true);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        selectNode(nodes[Math.max(index - 1, 0)], true);
+                        break;
+                    case 'Home':
+                        e.preventDefault();
+                        selectNode(nodes[0], true);
+                        break;
+                    case 'End':
+                        e.preventDefault();
+                        selectNode(nodes[nodes.length - 1], true);
+                        break;
+                    case 'ArrowRight':
+                        if (!selectedLi) { selectNode(nodes[0], true); break; }
+                        e.preventDefault();
+                        if (selectedLi.classList.contains('folder')) {
+                            if (!selectedLi.classList.contains('expanded')) {
+                                setExpanded(selectedLi, true);
+                            } else {
+                                var child = selectedLi.querySelector(':scope > ul.children > li.node');
+                                if (child) selectNode(child, true);
+                            }
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (!selectedLi) break;
+                        e.preventDefault();
+                        if (selectedLi.classList.contains('folder') && selectedLi.classList.contains('expanded')) {
+                            setExpanded(selectedLi, false);
+                        } else {
+                            var parentLi = selectedLi.parentElement ? selectedLi.parentElement.closest('li.node') : null;
+                            if (parentLi) selectNode(parentLi, true);
+                        }
+                        break;
+                    case 'Enter':
+                    case ' ':
+                        if (!selectedLi) { selectNode(nodes[0], true); break; }
+                        e.preventDefault();
+                        li = selectedLi;
+                        if (li.classList.contains('folder')) {
+                            toggleFolder(li);
+                        } else {
+                            openInRightFrame((li.__node || {}).u);
+                        }
+                        break;
+                }
+            });
+
+            document.getElementById('btn-upload').addEventListener('click', function () {
+                fileInput.click();
+            });
+            document.getElementById('btn-empty-upload').addEventListener('click', function () {
+                fileInput.click();
+            });
+            document.getElementById('btn-download').addEventListener('click', function () {
+                if (!currentTree.length) {
+                    setCounts('No bookmarks are available to download yet.', true);
+                    return;
+                }
+                var html = WeblinksBookmarks.buildStandaloneHTML(currentTree);
+                var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'bookmarks.html';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 5000);
+            });
+            document.getElementById('btn-clear').addEventListener('click', function () {
+                stopTreeRecovery();
+                WeblinksBookmarks.clearTree();
+                searchInput.value = '';
+                updateSearchClear();
+                render([]);
+                /* Other frames may hold their own copy (file:// storage is
+                 * per-file), so ask the parent to clear them as well. */
+                try {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'weblinks:clear-tree' }, '*');
+                    }
+                } catch (err) { /* ignore */ }
+            });
+
+            var syncBtn = document.getElementById('btn-sync');
+            var syncSpinTimer = null;
+
+            function stopSyncSpin() {
+                if (syncSpinTimer) {
+                    clearTimeout(syncSpinTimer);
+                    syncSpinTimer = null;
+                }
+                syncBtn.classList.remove('spinning');
+            }
+
+            function notifyAutoExport() {
+                if (!currentTree.length || window.parent === window) return;
+                var updatedAt = 0;
+                try { updatedAt = Number(localStorage.getItem(WeblinksBookmarks.UPDATED_KEY)) || 0; } catch (err) { /* ignore */ }
+                try {
+                    window.parent.postMessage({
+                        type: 'weblinks:auto-export',
+                        tree: currentTree,
+                        updatedAt: updatedAt
+                    }, '*');
+                } catch (err) { /* ignore */ }
+            }
+
+            syncBtn.addEventListener('click', function () {
+                stopSyncSpin();
+                syncBtn.classList.add('spinning');
+                syncSpinTimer = setTimeout(stopSyncSpin, 8000);
+
+                var updatedAt = 0;
+                try { updatedAt = Number(localStorage.getItem(WeblinksBookmarks.UPDATED_KEY)) || 0; } catch (err) { /* ignore */ }
+
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage({
+                            type: 'weblinks:sync-request',
+                            tree: currentTree,
+                            updatedAt: updatedAt
+                        }, '*');
+                        return;
+                    } catch (err) { /* fall through to local sync */ }
+                }
+
+                var stored = WeblinksBookmarks.loadTree();
+                if (stored.length) {
+                    stopTreeRecovery();
+                    render(stored);
+                    var counts = WeblinksBookmarks.countTree(stored);
+                    WeblinksBookmarks.postStatsToRightFrame({
+                        folders: counts.folders,
+                        links: counts.links,
+                        name: WeblinksBookmarks.getSourceName() || 'bookmarks'
+                    });
+                } else {
+                    setCounts('No saved bookmarks to sync.', false);
+                }
+                stopSyncSpin();
+            });
+            document.getElementById('brand-link').addEventListener('click', function (e) {
+                e.preventDefault();
+                var right = getRightFrame();
+
+                if (right && right !== window) {
+                    try {
+                        right.location.href = 'preview.html';
+                        return;
+                    } catch (err) { /* fall through */ }
+                }
+                window.open('preview.html', '_blank', 'noopener');
+            });
+            fileInput.addEventListener('change', function () {
+                if (fileInput.files && fileInput.files[0]) importFile(fileInput.files[0]);
+                fileInput.value = '';
+            });
+
+            searchInput.addEventListener('input', function () {
+                updateSearchClear();
+                applySearch(searchInput.value);
+            });
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    updateSearchClear();
+                    applySearch('');
+                }
+            });
+            searchClear.addEventListener('click', function () {
+                searchInput.value = '';
+                updateSearchClear();
+                applySearch('');
+                searchInput.focus();
+            });
+
+            editSave.addEventListener('click', function () {
+                if (editMode === 'add') commitAdd();
+                else if (editMode === 'edit') commitEdit();
+            });
+            editDelete.addEventListener('click', function () {
+                if (editMode === 'edit') commitDelete();
+            });
+            editClose.addEventListener('click', closeEditModal);
+            editCancel.addEventListener('click', closeEditModal);
+            editOverlay.addEventListener('mousedown', function (e) {
+                if (e.target === editOverlay) closeEditModal();
+            });
+            editOverlay.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeEditModal();
+                } else if (e.key === 'Enter' && e.target !== editIsFolder) {
+                    e.preventDefault();
+                    if (editMode === 'add') commitAdd();
+                    else if (editMode === 'edit') commitEdit();
+                }
+            });
+
+            document.getElementById('btn-expand').addEventListener('click', function () {
+                var folders = treeRoot.querySelectorAll('li.folder');
+                for (var i = 0; i < folders.length; i++) setExpanded(folders[i], true);
+            });
+            document.getElementById('btn-collapse').addEventListener('click', function () {
+                var folders = treeRoot.querySelectorAll('li.folder');
+                for (var i = 0; i < folders.length; i++) setExpanded(folders[i], false);
+            });
+
+            function setSidebarCollapsed(collapsed) {
+                /* The parent resizes the iframe; direct DOM access via
+                 * window.frameElement is blocked when the pages are treated as
+                 * cross-origin (e.g. Firefox file:// documents). */
+                if (window.parent === window) return;
+
+                document.body.classList.toggle('sidebar-collapsed', collapsed);
+
+                var btn = document.getElementById('btn-sidebar-toggle');
+                var label = collapsed ? 'Expand panel' : 'Collapse panel';
+                btn.title = label;
+                btn.setAttribute('aria-label', label);
+                btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+
+                try {
+                    window.parent.postMessage({
+                        type: 'weblinks:sidebar',
+                        collapsed: collapsed
+                    }, '*');
+                } catch (err) { /* ignore */ }
+
+                if (!collapsed) scroller.focus({ preventScroll: true });
+            }
+
+            document.getElementById('btn-sidebar-toggle').addEventListener('click', function () {
+                setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+            });
+
+            var dragDepth = 0;
+            function hasFiles(e) {
+                return !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1);
+            }
+            window.addEventListener('dragenter', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                dragDepth++;
+                document.body.classList.add('dragging');
+            });
+            window.addEventListener('dragover', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+            window.addEventListener('dragleave', function (e) {
+                if (!hasFiles(e)) return;
+                dragDepth = Math.max(0, dragDepth - 1);
+                if (!dragDepth) document.body.classList.remove('dragging');
+            });
+            window.addEventListener('drop', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                dragDepth = 0;
+                document.body.classList.remove('dragging');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    importFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            var recoveryTimer = null;
+            var recoveryTries = 0;
+
+            function stopTreeRecovery() {
+                if (recoveryTimer) {
+                    clearInterval(recoveryTimer);
+                    recoveryTimer = null;
+                }
+            }
+
+            function requestStoredTree() {
+                if (currentTree.length) { stopTreeRecovery(); return; }
+                try {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'weblinks:request-tree' }, '*');
+                    }
+                } catch (err) { /* ignore */ }
+            }
+
+            /* Browsers may treat each file:// document as its own storage
+             * origin, so a tree imported elsewhere is not in our localStorage.
+             * Ask the parent (which relays to preview.html) for a stored copy. */
+            function startTreeRecovery() {
+                requestStoredTree();
+                if (recoveryTimer) return;
+                recoveryTimer = setInterval(function () {
+                    if (currentTree.length || ++recoveryTries > 15) {
+                        stopTreeRecovery();
+                        return;
+                    }
+                    requestStoredTree();
+                }, 200);
+            }
+
+            window.addEventListener('message', function (e) {
+                var data = e.data;
+                if (!data || typeof data !== 'object') return;
+                if (data.type === 'weblinks:dark-mode') {
+                    document.body.classList.toggle('dark-mode', !!data.dark);
+                    return;
+                }
+                if (data.type === 'weblinks:render-tree' && Array.isArray(data.tree)) {
+                    lastMessageRender = Date.now();
+                    stopTreeRecovery();
+                    /* Keep our own copy so the tree survives a reload even when
+                     * the importer's storage is a different origin. */
+                    WeblinksBookmarks.saveTree(data.tree,
+                        data.stats && data.stats.name ? data.stats.name : undefined);
+                    render(data.tree);
+                    if (data.stats) WeblinksBookmarks.postStatsToRightFrame(data.stats);
+                    notifyAutoExport();
+                } else if (data.type === 'weblinks:sync-result') {
+                    stopSyncSpin();
+                    setCounts(data.message || 'Sync complete.', !data.ok);
+                    setTimeout(updateCounts, 4000);
+                } else if (data.type === 'weblinks:tree-updated') {
+                    if (Date.now() - lastMessageRender < 1500) return;
+                    scheduleStorageRender();
+                }
+            });
+
+            function applyDarkMode() {
+                document.body.classList.toggle('dark-mode', localStorage.getItem('darkMode') === 'true');
+            }
+
+            function setDarkMode(dark) {
+                document.body.classList.toggle('dark-mode', !!dark);
+                try {
+                    localStorage.setItem('darkMode', dark ? 'true' : 'false');
+                } catch (err) { /* ignore */ }
+            }
+
+            function rightFrameDoc() {
+                var right = getRightFrame();
+                if (!right || right === window) return null;
+                var doc;
+                try { doc = right.document; } catch (err) { return null; }
+                if (!doc || doc.readyState !== 'complete' || !doc.body) return null;
+                /* Only preview.html owns the mode switch; this skips about:blank
+                 * and bookmarked pages opened in the right panel. */
+                if (!doc.getElementById || !doc.getElementById('dark-mode-toggle')) return null;
+                return doc;
+            }
+
+            /* The right panel is the source of truth. Mirror its state (and
+             * remember it) so the next visit opens in the same mode. */
+            function applyModeFromRightFrame() {
+                var doc = rightFrameDoc();
+                if (!doc) return false;
+                setDarkMode(doc.body.classList.contains('dark-mode'));
+                return true;
+            }
+
+            function watchRightFrameLoad() {
+                var right = getRightFrame();
+                if (!right || right === window) return false;
+                try {
+                    if (right.__weblinksModeWatched) return true;
+                    right.addEventListener('load', function () {
+                        applyModeFromRightFrame();
+                    });
+                    right.__weblinksModeWatched = true;
+                } catch (err) { return false; }
+                return true;
+            }
+
+            var modeTimer = null;
+            var modeTries = 0;
+
+            /* Restore the last remembered state first, then match the right
+             * panel as soon as its document is ready. The frames load
+             * independently, so keep checking until preview.html is available. */
+            applyDarkMode();
+            var modeMatched = applyModeFromRightFrame();
+            watchRightFrameLoad();
+            if (!modeMatched) {
+                modeTimer = setInterval(function () {
+                    watchRightFrameLoad();
+                    if (applyModeFromRightFrame() || ++modeTries > 100) {
+                        clearInterval(modeTimer);
+                        modeTimer = null;
+                    }
+                }, 100);
+            }
+
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'darkMode') {
+                    applyDarkMode();
+                    return;
+                }
+                if (e.key === WeblinksBookmarks.TREE_KEY ||
+                    e.key === WeblinksBookmarks.UPDATED_KEY ||
+                    e.key === 'uploadedBookmarks') {
+                    scheduleStorageRender();
+                }
+            });
+
+            window.WeblinksTree = {
+                getTree: function () { return currentTree; },
+                getStats: function () { return { folders: stats.folders, links: stats.links }; }
+            };
+
+            var savedTree = WeblinksBookmarks.loadTree();
+            render(savedTree);
+            if (!savedTree.length) startTreeRecovery();
+        })();
     </script>
 </body>
+</html>

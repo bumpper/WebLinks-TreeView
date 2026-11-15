@@ -1,0 +1,58 @@
+{
+  "guid": "root________",
+  "title": "",
+  "type": "text/x-moz-place-container",
+  "root": "placesRoot",
+  "children": [
+    {
+      "guid": "menu________",
+      "title": "menu",
+      "type": "text/x-moz-place-container",
+      "root": "bookmarksMenuFolder",
+      "children": [
+        {
+          "type": "text/x-moz-place-container",
+          "title": "Bookmarks bar",
+          "children": [
+            {
+              "type": "text/x-moz-place",
+              "title": "Wikipedia",
+              "uri": "https://www.wikipedia.org/"
+            },
+            {
+              "type": "text/x-moz-place",
+              "title": "Bigpoint",
+              "uri": "https://www.bigpoint.net/?originalURL=www.bigpoint.com&aid=2922"
+            },
+            {
+              "type": "text/x-moz-place",
+              "title": "AccuWeather",
+              "uri": "https://www.accuweather.com/?partner=operadesktop"
+            },
+            {
+              "type": "text/x-moz-place",
+              "title": "Ask.com",
+              "uri": "https://www.ask.com/"
+            }
+          ]
+        },
+        {
+          "type": "text/x-moz-place-container",
+          "title": "Other bookmarks",
+          "children": [
+            {
+              "type": "text/x-moz-place",
+              "title": "News - CNET",
+              "uri": "https://www.cnet.com/news/"
+            },
+            {
+              "type": "text/x-moz-place",
+              "title": "INTERNET.COM",
+              "uri": "https://internet.com/"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
