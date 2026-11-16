@@ -301,7 +301,7 @@ body {
 }
 .pane-header {
     flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
-    gap: 6px; padding: 6px 6px 6px 10px; background: var(--hdr);
+    gap: 6px; padding: 3px 6px 3px 10px; background: var(--hdr);
     border-bottom: 1px solid var(--line); user-select: none;
 }
 .pane-title {
