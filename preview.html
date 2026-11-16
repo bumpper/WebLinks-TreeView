@@ -119,6 +119,13 @@
             font-size: 12px;
         }
         body.dark-mode #bookmark-filename { color: #aaa; }
+        .test-file-hint {
+            font-size: 12px;
+            color: #888;
+        }
+        .test-file-hint a { color: #3366cc; }
+        body.dark-mode .test-file-hint { color: #aaa; }
+        body.dark-mode .test-file-hint a { color: #8ab4f8; }
         .help-btn {
             position: absolute;
             top: 20px;
@@ -238,6 +245,7 @@
                     <span id="bookmark-filename">No file chosen</span>
                 </p>
                 <p><span style="color:#888;">Or drag and drop the file here.</span></p>
+                <p class="test-file-hint">Or download the <a href="bookmarks.html" download="bookmarks.html">Example File</a></p>
             </div>
             <div id="upload-message" style="margin-top:1em;color:#555;"></div>
                     <div id="browser-help-list" style="width:100%;margin-top:2em;text-align:left;">
@@ -413,6 +421,31 @@
             setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
             return true;
         }
+
+        function downloadExampleFile() {
+            fetch('bookmarks.html').then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.blob();
+            }).then(function (blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bookmarks.html';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+            }).catch(function () {
+                uploadMessage.textContent = 'Could not download bookmarks.html. Right-click the Example File link and choose "Save link as\u2026".';
+            });
+        }
+
+        document.querySelectorAll('.test-file-hint a').forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                downloadExampleFile();
+            });
+        });
 
         function showImported(result, fileName, saved) {
             uploadMessage.innerHTML =

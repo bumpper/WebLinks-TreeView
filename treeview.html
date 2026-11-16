@@ -290,6 +290,8 @@
         .empty p { margin: 0; max-width: 270px; }
         .empty .empty-icon { width: 52px; height: 52px; opacity: 0.85; }
         .empty .drop-hint { font-size: 12px; }
+        .empty .drop-hint a { color: #3366cc; }
+        body.dark-mode .empty .drop-hint a { color: #8ab4f8; }
         .primary {
             margin-top: 4px;
             padding: 6px 14px;
@@ -557,6 +559,7 @@
             <p>Upload an exported bookmarks file (.html) from Edge, Chrome, Firefox, Brave, Opera, or Safari.</p>
             <button id="btn-empty-upload" class="primary" type="button">Upload bookmarks</button>
             <p class="drop-hint">or drag the file anywhere in this panel</p>
+            <p class="drop-hint">Or download the <a href="bookmarks.html" download="bookmarks.html">Example File</a></p>
         </div>
     </main>
 
@@ -1502,6 +1505,27 @@
                 a.click();
                 setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 5000);
             });
+            var exampleLink = document.querySelector('.empty .drop-hint a');
+            if (exampleLink) {
+                exampleLink.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    fetch('bookmarks.html').then(function (res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.blob();
+                    }).then(function (blob) {
+                        var blobUrl = URL.createObjectURL(blob);
+                        var link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = 'bookmarks.html';
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        setTimeout(function () { URL.revokeObjectURL(blobUrl); link.remove(); }, 5000);
+                    }).catch(function () {
+                        setMessage('Could not download bookmarks.html. Right-click the Example File link and choose "Save link as\u2026".', true);
+                    });
+                });
+            }
             document.getElementById('btn-clear').addEventListener('click', function () {
                 stopTreeRecovery();
                 WeblinksBookmarks.clearTree();
