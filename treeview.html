@@ -912,16 +912,29 @@
                 }
                 parentList.push(node);
                 var li = buildNode(node);
-                if (target.addRow && target.addRow.parentNode) {
-                    target.addRow.parentNode.insertBefore(li, target.addRow);
+                var anchor = target.addRow && target.addRow.parentNode ? target.addRow : null;
+                if (anchor) {
+                    anchor.parentNode.insertBefore(li, anchor);
                 }
                 if (isFolder) setExpanded(li, true);
                 if (target.folder) {
                     refreshFolderTitle(target.folder, target.addRow.parentNode.parentElement);
                 }
                 closeEditModal();
-                selectNode(li, true);
-                afterTreeChange();
+                if (anchor) {
+                    selectNode(li, true);
+                    afterTreeChange();
+                } else {
+                    /* No inline add row (empty tree): rebuild so the new node shows. */
+                    afterTreeChange();
+                    render(currentTree);
+                    var topLis = treeRoot.querySelectorAll(':scope > li.node');
+                    var newLi = null;
+                    for (var k = 0; k < topLis.length; k++) {
+                        if (topLis[k].__node === node) { newLi = topLis[k]; break; }
+                    }
+                    selectNode(newLi, true);
+                }
             }
 
             function commitEdit() {
@@ -1169,30 +1182,13 @@
                 return url;
             }
 
-            function rightFramePresent() {
-                if (window.parent === window) return false;
-                try {
-                    if (window.top && window.top.frames) {
-                        return !!window.top.frames['rightFrame'];
-                    }
-                } catch (err) { /* cross-origin: assume the parent relays */ }
-                return true;
-            }
-
             function openInRightFrame(url) {
                 url = checkUrl(url);
                 if (!url) return;
-                var frame = getRightFrame();
-                if (frame && frame !== window) {
-                    try {
-                        frame.location.href = url;
-                        try {
-                            window.parent.postMessage({ type: 'weblinks:right-location', href: url, title: '' }, '*');
-                        } catch (notifyErr) { /* ignore */ }
-                        return;
-                    } catch (err) { /* cross-origin: fall through to the parent relay */ }
-                }
-                if (rightFramePresent()) {
+                /* When embedded, let the parent page drive the right frame. Direct
+                 * frame access is unreliable on iOS WebKit and for file:// frames,
+                 * where this used to fall back to loading the page in this panel. */
+                if (window.parent !== window) {
                     try {
                         window.parent.postMessage({ type: 'weblinks:right-navigate', url: url }, '*');
                         return;
@@ -1209,8 +1205,9 @@
 
             var POPOUT_KEY = 'weblinksOpenInNewTabs';
             var popoutButton = document.getElementById('btn-popout-all');
+            /* Off on every load; the toggle lasts for the session only. */
             var popoutAll = false;
-            try { popoutAll = localStorage.getItem(POPOUT_KEY) === 'true'; } catch (err) { popoutAll = false; }
+            try { localStorage.removeItem(POPOUT_KEY); } catch (err) { /* storage may be blocked on file:// */ }
 
             function applyPopoutState() {
                 popoutButton.setAttribute('aria-pressed', popoutAll ? 'true' : 'false');
@@ -1220,7 +1217,6 @@
 
             popoutButton.addEventListener('click', function () {
                 popoutAll = !popoutAll;
-                try { localStorage.setItem(POPOUT_KEY, popoutAll ? 'true' : 'false'); } catch (err) { /* storage may be blocked on file:// */ }
                 applyPopoutState();
             });
 
@@ -1763,6 +1759,10 @@
                 if (!data || typeof data !== 'object') return;
                 if (data.type === 'weblinks:dark-mode') {
                     document.body.classList.toggle('dark-mode', !!data.dark);
+                    return;
+                }
+                if (data.type === 'weblinks:open-add') {
+                    openAddModal(null, treeRoot.querySelector(':scope > li.add-row'));
                     return;
                 }
                 if (data.type === 'weblinks:render-tree' && Array.isArray(data.tree)) {

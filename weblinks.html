@@ -129,6 +129,42 @@
         }
         #url-input:focus { box-shadow: inset 0 -2px 0 #0078d4; }
         #url-input.invalid { box-shadow: inset 0 -2px 0 #c42b1c; }
+        .url-nav {
+            flex: 0 0 auto;
+            width: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #1f1f1f;
+            cursor: pointer;
+        }
+        .url-nav:hover:not(:disabled) { color: #0078d4; }
+        #url-home:hover:not(:disabled) { color: #d69e00; }
+        .dark-mode #url-home:hover:not(:disabled) { color: #ffd966; }
+        .url-nav:focus-visible { outline: 1px solid #0078d4; outline-offset: -2px; }
+        .url-nav svg { width: 15px; height: 15px; }
+        .url-nav:disabled { opacity: 0.35; cursor: default; }
+        .dark-mode .url-nav { color: #e8e8e8; }
+        .dark-mode .url-nav:hover:not(:disabled) { color: #6cb6ff; }        .url-bookmark {
+            flex: 0 0 auto;
+            width: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #1f1f1f;
+            cursor: pointer;
+        }
+        .url-bookmark:hover { color: #c42b1c; }
+        .url-bookmark:focus-visible { outline: 1px solid #0078d4; outline-offset: -2px; }
+        .url-bookmark svg { width: 15px; height: 15px; }
+        .dark-mode .url-bookmark { color: #e8e8e8; }
+        .dark-mode .url-bookmark:hover { color: #ff8b8b; }
         .url-go {
             flex: 0 0 auto;
             width: 30px;
@@ -141,7 +177,7 @@
             color: #555555;
             cursor: pointer;
         }
-        .url-go:hover { color: #0078d4; }
+        .url-go:hover { color: #1e8e3e; }
         .url-go:focus-visible { outline: 1px solid #0078d4; outline-offset: -2px; }
         .url-go svg { width: 16px; height: 16px; }
         .dark-mode .url-bar {
@@ -151,7 +187,7 @@
         .dark-mode #url-input { color: #e8e8e8; }
         .dark-mode #url-input::placeholder { color: #9a9a9a; }
         .dark-mode .url-go { color: #bbbbbb; }
-        .dark-mode .url-go:hover { color: #6cb6ff; }
+        .dark-mode .url-go:hover { color: #7bd88f; }
         .divider {
             width: 6px;
             background: #ccc;
@@ -465,6 +501,15 @@
         <div class="divider" id="divider"></div>
         <div class="right-pane">
             <div class="url-bar">
+                <button id="url-back" class="url-nav" type="button" title="Back" aria-label="Back" disabled>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H4"/><path d="M7.6 3.6L3.2 8l4.4 4.4"/></svg>
+                </button>
+                <button id="url-home" class="url-nav" type="button" title="Home" aria-label="Home">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.4 7.6L8 3.1l5.6 4.5"/><path d="M3.9 7v5.9h8.2V7"/></svg>
+                </button>
+                <button id="url-bookmark-add" class="url-bookmark" type="button" title="Add bookmark" aria-label="Add bookmark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v14.6l-7-4.4-7 4.4z"/></svg>
+                </button>
                 <input id="url-input" type="text" placeholder="https://" autocomplete="off" spellcheck="false" aria-label="Load a URL in the right panel">
                 <button id="url-go" class="url-go" type="button" title="Load URL" aria-label="Load URL">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9"/><path d="M8.5 4.5L12 8l-3.5 3.5"/></svg>
@@ -582,6 +627,16 @@
                 e.preventDefault();
                 loadUrlFromBar();
             }
+        });
+
+        // Bookmark icon opens the Bookmark Properties modal in the treeview
+        const urlBookmarkAdd = document.getElementById('url-bookmark-add');
+        urlBookmarkAdd.addEventListener('click', function () {
+            try {
+                if (window.frames['leftFrame']) {
+                    window.frames['leftFrame'].postMessage({ type: 'weblinks:open-add' }, '*');
+                }
+            } catch (err) { /* ignore */ }
         });
 
         // Restore dark mode from localStorage
@@ -704,6 +759,61 @@
             var lastRightHref = '';
             var lastRightTitle = '';
             var urlInputEl = document.getElementById('url-input');
+            var rightFrameEl = document.getElementById('rightFrame');
+            var backBtn = document.getElementById('url-back');
+            var homeBtn = document.getElementById('url-home');
+            /* Session history for the right frame; '' is preview.html (home). */
+            var rightHistory = [''];
+            var rightIndex = 0;
+
+            function updateBackState() {
+                backBtn.disabled = rightIndex === 0;
+            }
+
+            function recordRightLocation(href) {
+                if (href === rightHistory[rightIndex]) return;
+                rightHistory = rightHistory.slice(0, rightIndex + 1);
+                rightHistory.push(href);
+                rightIndex = rightHistory.length - 1;
+                updateBackState();
+            }
+
+            function showHome() {
+                rightFrameEl.src = 'preview.html';
+                lastRightHref = '';
+                lastRightTitle = '';
+                if (document.activeElement !== urlInputEl) urlInputEl.value = '';
+            }
+
+            backBtn.addEventListener('click', function () {
+                if (rightIndex === 0) return;
+                rightIndex--;
+                updateBackState();
+                var href = rightHistory[rightIndex];
+                if (!href) {
+                    showHome();
+                    return;
+                }
+                rightFrameEl.src = href;
+                lastRightHref = href;
+                lastRightTitle = '';
+                if (document.activeElement !== urlInputEl) urlInputEl.value = href;
+                harvestTitle(href);
+            });
+
+            homeBtn.addEventListener('click', function () {
+                recordRightLocation('');
+                showHome();
+            });
+
+            /* Same-origin right-frame navigations (e.g. following links on our
+             * own pages) never post a message; observe them through load events. */
+            rightFrameEl.addEventListener('load', function () {
+                var loc;
+                try { loc = rightFrameEl.contentWindow.location.href; } catch (err) { return; }
+                if (!loc) return;
+                recordRightLocation(/\/preview\.html(?:[?#].*)?$/i.test(loc) ? '' : loc);
+            });
 
             window.addEventListener('message', function (e) {
                 var data = e.data;
@@ -745,9 +855,10 @@
                     var target = data.url.trim();
                     var targetProtocol = '';
                     try { targetProtocol = new URL(target).protocol; } catch (err) { targetProtocol = ''; }
-                    if (['http:', 'https:', 'file:', 'ftp:'].indexOf(targetProtocol) === -1) return;
+                    if (['http:', 'https:', 'file:', 'ftp:', 'mailto:'].indexOf(targetProtocol) === -1) return;
                     var navFrame = document.getElementById('rightFrame');
                     if (!navFrame) return;
+                    recordRightLocation(target);
                     navFrame.src = target;
                     lastRightHref = target;
                     lastRightTitle = '';
@@ -775,12 +886,14 @@
                 if (data.type === 'weblinks:right-location') {
                     if (typeof data.href !== 'string') return;
                     if (!data.href || /\/preview\.html(?:[?#].*)?$/i.test(data.href)) {
+                        recordRightLocation('');
                         lastRightHref = '';
                         lastRightTitle = '';
                         if (document.activeElement !== urlInputEl) urlInputEl.value = '';
                         return;
                     }
                     var unchanged = data.href === lastRightHref;
+                    recordRightLocation(data.href);
                     lastRightHref = data.href;
                     lastRightTitle = unchanged && data.title === '' ? lastRightTitle : (typeof data.title === 'string' ? data.title : '');
                     if (document.activeElement !== urlInputEl) urlInputEl.value = lastRightHref;
